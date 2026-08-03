@@ -1,108 +1,193 @@
 # Bedrot
 
-Bedrot is a short first-person narrative choice game built in Unity.
+Bedrot is a short narrative choice game built in Unity.
 
-The player spends the game lying in bed and scrolling through content on their phone. Different scenarios appear through social-media posts, messages, videos, headlines, and conversations. The player must choose how to respond based on the information currently available.
+The game follows a branching structure inspired by Telltale-style narrative games and dating simulations. The player progresses through authored scenes, speaks with characters, and selects difficult responses that change relationship scores and determine which later subscenes become available.
 
-Each scenario presents several plausible choices. Decisions may change later dialogue, determine which information becomes available, and lead the story toward different outcomes.
+The game is not based on free movement or exploration. Each scene is presented through a static or lightly animated background, one or more character sprite PNGs, a dialogue textbox, and a choice interface.
 
-## Core Concept
-
-The game is centred around making decisions while bedrotting and doom-scrolling.
-
-The player does not freely move around the environment. The bedroom, bed, hands, and phone form the main visual composition. Most interactions happen through the phone interface or through events visible from the bed.
-
-The primary gameplay loop is:
+## Core Gameplay
 
 ```text
-View content
-→ review the available information
-→ select a response or action
-→ observe the consequence
-→ continue to the next scenario
+Main Menu
+→ Scene 1
+→ Apply choice effects
+→ Update relationship scores
+→ Evaluate next-scene conditions
+→ Select an eligible subscene
+→ Continue the story
 ```
 
-## Gameplay
+Scene 1 introduces the characters and presents the first meaningful moral dilemma.
 
-During a scenario, the player may encounter:
+From Scene 2 onward, the game selects subscenes according to the player’s current relationship state and previous decisions.
 
-- short-form videos;
-- social-media posts;
-- private messages;
-- news headlines;
-- images;
-- comments;
-- conversations with other characters.
+## Relationship System
 
-The player selects one option from a set of choices. Choices should not be presented as simple correct or incorrect answers. Each option should appear reasonable based on what the player knows at that moment.
+Each important character has an independent relationship score.
 
-Later scenes may reveal additional information that changes the meaning of an earlier event or decision.
+```text
+Character A: 2
+Character B: -1
+Character C: 3
+```
 
-## Narrative Structure
+The complete relationship state can be represented as:
 
-The game uses a branching narrative structure.
+```text
+(A, B, C) = (2, -1, 3)
+```
 
-A scenario may contain:
+Every meaningful answer must affect at least one character relationship score. A choice may affect several characters at once.
 
-- an opening scene;
-- one or more narrative beats;
-- phone content;
-- dialogue;
-- a multiple-choice decision;
-- a consequence;
-- a destination leading to the next narrative node.
+```text
+Choice: Defend Character A publicly
 
-Previous choices may affect:
+Character A: +2
+Character B: -1
+Character C: 0
+```
 
-- later dialogue;
-- which posts appear;
-- how characters respond;
-- which choices are available;
-- the final outcome.
+Relationship effects should not always be obvious before the player chooses. Choices should create conflict between loyalty, truth, trust, reputation, and wider consequences.
 
-## Perspective
+## Scene and Subscene Structure
 
-The game is presented from a first-person perspective.
+The story is divided into major scenes:
 
-The player generally remains unseen. The visible composition may include:
+```text
+S1
+S2
+S3
+...
+Sn
+```
 
-- the bedroom;
-- the bed and blankets;
-- the player’s hands;
-- the phone;
-- phone-screen content;
-- environmental events occurring in front of the player.
+A major scene may contain several conditional subscenes:
 
-The scene should feel as though the player is lying in bed and looking directly ahead while using their phone.
+```text
+S2
+├── S2_A_TrustsPlayer
+├── S2_BAndC_TrustPlayer
+├── S2_AHostile
+└── S2_Default
+```
+
+The selected subscene depends on the current game state.
+
+```text
+Relationship state: (A, B, C) = (1, 0, 0)
+→ select an A-focused subscene
+
+Relationship state: (A, B, C) = (0, 1, 1)
+→ select a shared B-and-C subscene
+```
+
+Subscene conditions should normally use score ranges rather than one exact relationship vector.
+
+```text
+A >= 2
+B <= 0
+C >= 1
+```
+
+Each major scene must include a fallback subscene so progression cannot become blocked.
+
+## Scene Selection
+
+When a scene ends, the game:
+
+1. records the selected choice;
+2. applies relationship effects;
+3. applies story flags and other consequences;
+4. retrieves candidate subscenes for the next major scene;
+5. evaluates each candidate against the current game state;
+6. ranks eligible candidates by priority;
+7. selects the highest-priority candidate;
+8. presents that subscene.
+
+Scene selection should be deterministic unless randomness is explicitly required.
+
+## Choices
+
+Choices should be difficult and plausible.
+
+Avoid:
+
+```text
+A. Good answer
+B. Neutral answer
+C. Obviously evil answer
+```
+
+Prefer:
+
+```text
+A. Reveal what happened and betray a friend’s confidence
+B. Protect the friend and allow a false interpretation to continue
+C. Refuse to take a side and lose trust from both characters
+```
+
+Each meaningful choice must define:
+
+- display text;
+- relationship effects;
+- optional story flags;
+- optional immediate response;
+- optional direct scene destination;
+- optional long-term consequences.
+
+## Presentation
+
+Each scene uses a visual-novel-style composition:
+
+```text
+Background image
+Character sprite layer
+Optional secondary character sprite
+Dialogue textbox
+Speaker name
+Choice panel
+Minimal visual effects
+```
+
+Character sprites use transparent PNG files.
+
+Animations should remain minimal:
+
+- fade in and fade out;
+- sprite position changes;
+- small idle movement;
+- expression swaps;
+- brief screen shake;
+- simple transition effects.
 
 ## Visual Style
 
 The game uses a pixel-art visual style.
 
-Visual elements are separated into layers so they can be animated and replaced independently:
+Recommended assets:
 
-```text
-Bedroom background
-Bed
-Hands
-Phone
-Thumb
-Phone-screen interface
-Foreground effects
-```
-
-Sprites should use PNG format, consistent dimensions, transparent backgrounds where required, and nearest-neighbour filtering in Unity.
+- PNG backgrounds;
+- transparent PNG character sprites;
+- PNG sprite sheets where animation is required;
+- nearest-neighbour filtering;
+- no compression for important pixel-art assets;
+- consistent scale and dimensions.
 
 ## Initial Scope
 
-The first version should focus on:
+The first playable version should include:
 
-- one bedroom environment;
-- a first-person phone interface;
-- a small set of authored scenarios;
-- one meaningful multiple-choice decision per scenario;
-- branching narrative outcomes;
-- basic hand and scrolling animations;
+- a main menu;
+- one complete opening scene;
+- one difficult multiple-choice decision;
+- relationship score updates;
+- at least two possible Scene 2 subscenes;
+- one fallback Scene 2 subscene;
+- character sprite presentation;
+- background presentation;
+- dialogue textbox;
+- basic scene transitions;
 - local save and restart support.
 
 The initial version does not require:
@@ -111,29 +196,31 @@ The initial version does not require:
 - combat;
 - multiplayer;
 - a remote backend;
-- live social-media integration;
-- procedural dialogue;
 - runtime generative AI;
-- user-generated scenarios;
-- complex progression systems.
+- procedural dialogue;
+- complex inventory systems;
+- voice acting;
+- full character animation;
+- random scene generation.
 
 ## Technology
 
 - Unity
 - C#
 - ScriptableObjects for narrative authoring
-- PNG sprites and sprite sheets
+- PNG character sprites and backgrounds
 - Local JSON save data
 
 ## Project Goal
 
-The goal is to create a compact narrative experience in which the player repeatedly makes decisions from bed while consuming information through their phone.
+The goal is to create a compact branching narrative game where difficult decisions reshape relationships and cause later scenes to change.
 
 The project should prioritise:
 
-- believable choices;
-- short and focused scenarios;
-- clear consequences;
-- consistent first-person presentation;
-- reusable narrative and visual systems;
-- clean separation between game logic and Unity presentation.
+- morally difficult choices;
+- persistent relationship consequences;
+- clear but non-obvious character reactions;
+- conditional subscene selection;
+- deterministic narrative flow;
+- reusable scene authoring tools;
+- clean separation between narrative logic and Unity presentation.
