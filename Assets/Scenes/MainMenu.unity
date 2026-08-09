@@ -931,7 +931,82 @@ MonoBehaviour:
   startButtonRenderer: {fileID: 0}
   settingButtonRenderer: {fileID: 0}
   fadeDuration: 0.8
-  destinationSceneName: Game
+  gameCompositionRoot: {fileID: 1932410314}
+--- !u!1 &1932410311
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1932410315}
+  - component: {fileID: 1932410314}
+  - component: {fileID: 1932410313}
+  - component: {fileID: 1932410312}
+  m_Layer: 0
+  m_Name: GameBootstrap
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1932410312
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1932410311}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52bb9348a50c3764d9ee4e62351616fa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Bedrot.Runtime::Bedrot.Narrative.Presentation.GamePresentationGateway
+--- !u!114 &1932410313
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1932410311}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb9df4daa8bc98f4a84adf256dd638c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Bedrot.Runtime::Bedrot.Narrative.Infrastructure.UnitySceneLoadingAdapter
+--- !u!114 &1932410314
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1932410311}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52415f3dedf20194abd51e6c7ff4b276, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Bedrot.Runtime::Bedrot.Bootstrap.GameCompositionRoot
+  sceneLoadingAdapter: {fileID: 1932410313}
+  presentationGateway: {fileID: 1932410312}
+  useBuiltInDemoContent: 1
+  openingScene: {fileID: 0}
+  narrativeCandidates: []
+--- !u!4 &1932410315
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1932410311}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.55157, y: 0.4562, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -944,3 +1019,4 @@ SceneRoots:
   - {fileID: 1454561488}
   - {fileID: 1209510781}
   - {fileID: 186863281}
+  - {fileID: 1932410315}

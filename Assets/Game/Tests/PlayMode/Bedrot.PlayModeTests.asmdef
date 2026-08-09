@@ -1,0 +1,11 @@
+{
+  "name": "Bedrot.PlayModeTests",
+  "rootNamespace": "Bedrot.Tests",
+  "references": ["Bedrot.Runtime"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "autoReferenced": false,
+  "overrideReferences": false,
+  "noEngineReferences": false
+}
