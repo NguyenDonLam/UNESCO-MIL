@@ -1,1095 +1,686 @@
-# Project Architecture Instructions
+# Bedrot Project Instructions
 
-## Project Type
+## Project Definition
 
-This project is a short first-person Unity narrative choice game focused on Media and Information Literacy.
+Bedrot is a Unity narrative choice game inspired by Telltale-style games and dating simulations.
 
-The player remains in bed and interacts primarily through a fictional social-media feed. Narrative choices affect later scenes, room upgrades or degradation, temporary gameplay modifiers, and eventual endings such as prison.
+The game consists of authored major scenes and conditional subscenes. The player reads dialogue, observes character sprites over a background, and selects choices. Every meaningful choice must affect at least one character relationship score.
 
-The architecture must remain clean, modular, testable, and appropriate for a small-to-medium Unity game. Do not treat the project like a distributed backend system.
+From Scene 2 onward, subscene selection is based primarily on relationship scores, previous choices, and story flags.
+
+Presentation consists of:
+
+```text
+Background
+Character sprite PNGs
+Dialogue textbox
+Speaker name
+Choice interface
+Minimal animation
+```
+
+Do not implement free movement, combat, room-upgrade systems, or unnecessary world simulation unless explicitly requested.
 
 ---
 
-# Core Architectural Direction
+# Core Runtime Flow
 
-Use a feature-based modular monolith with a pure C# game core and Unity-specific adapters around it.
+```text
+Main Menu
+→ Start Scene 1
+→ Present dialogue
+→ Present difficult choice
+→ SelectChoiceCommand
+→ Apply relationship and story effects
+→ Complete current scene
+→ Select next eligible subscene
+→ Present next subscene
+```
 
-Use the following dependency direction:
+The next scene must be selected from game state. UI components must not directly decide narrative progression.
+
+---
+
+# Architectural Style
+
+Use a feature-based modular monolith with:
+
+- a pure C# domain layer;
+- an application layer containing use cases;
+- Unity presentation adapters;
+- ScriptableObjects for authoring;
+- JSON for save data.
+
+Dependency direction:
 
 ```text
 Unity Presentation
         ↓
-Application / Use Cases
+Application
         ↓
-Pure C# Domain
+Domain
         ↑
-Infrastructure Adapters
+Infrastructure
 ```
 
-The central rule is:
-
-> Narrative rules, progression rules, and game state must not depend on MonoBehaviour, scenes, prefabs, UI components, Animator Controllers, or other Unity APIs.
-
-Unity should render and interact with game state. Unity objects must not become the authoritative source of game state.
+The domain must not reference `MonoBehaviour`, `GameObject`, `ScriptableObject`, Unity scenes, Animator Controllers, UI components, or Unity APIs.
 
 ---
 
-# Required Architectural Patterns
+# Required Patterns
 
-Use:
+| Concern | Pattern |
+|---|---|
+| Creating scenarios | Factory |
+| Loading scene definitions | Repository |
+| Evaluating subscene conditions | Specification |
+| Combining conditions | Composite Specification |
+| Selecting among eligible scenes | Strategy |
+| Player actions | Command |
+| Handling player actions | Command Handler |
+| Runtime presentation modes | State |
+| Switching runtime modes | State Machine |
+| Updating views | Observer / Events |
+| Mapping state into UI | Presenter |
+| Unity-specific implementations | Adapter |
+| Saving and restoring state | Memento |
+| Constructing dependencies | Composition Root |
 
-- feature-first modular organisation;
-- data-driven narrative;
-- finite-state machines;
-- command handlers for player actions;
-- event-driven presentation updates;
-- ports and adapters for persistence, content loading, animation, audio, and analytics;
-- ScriptableObjects for editor authoring only;
-- immutable runtime narrative definitions where practical;
-- one authoritative `GameSession`;
-- dependency injection through a manual composition root;
-- pure C# domain and application tests.
+Any class, interface, method, or function that primarily implements a recognised pattern must include that pattern name.
 
-Do not use:
+Required examples:
 
-- global mutable singletons;
-- `FindObjectOfType`;
-- static service locators;
-- static event buses;
-- scene objects directly mutating progression;
-- story logic inside UI buttons;
-- one giant `GameManager`;
-- one giant Animator Controller;
-- direct dependencies between unrelated features;
-- microservices;
-- full event sourcing;
-- backend-style CQRS ceremony for trivial reads;
-- a Unity scene for every narrative node.
+```text
+ScenarioFactory
+NarrativeSceneRepository
+RelationshipScoreSpecification
+AllSceneConditionsCompositeSpecification
+HighestPriorityNarrativeSceneSelectionStrategy
+SelectChoiceCommand
+SelectChoiceCommandHandler
+NarrativeFlowStateMachine
+WaitingForChoiceState
+NarrativeScenePresenter
+UnityCharacterSpriteAdapter
+GameSessionMemento
+GameCompositionRoot
+```
+
+The scenario factory must be named `ScenarioFactory`.
 
 ---
 
-# High-Level Modules
-
-```text
-Game
-├── Bootstrap
-├── Narrative
-├── Progression
-├── Room
-├── Feed
-├── Save
-├── Audio
-├── Presentation
-└── Shared
-```
-
-## Narrative
-
-Responsible for scenes, dialogue, choices, branching, conditions, effects, narrative progression, and scenario completion.
-
-## Progression
-
-Responsible for room tokens, unlocks, lightweight buffs and debuffs, ending conditions, and prison or other loss states.
-
-## Room
-
-Responsible for room tier, unlocked decorations, degraded room variants, visible room state, and mapping room state to presentation.
-
-## Feed
-
-Responsible for posts displayed on the phone, scrolling order, repeated narratives, missing-context content, alternative or corrective information, and feed behaviour produced by previous choices.
-
-## Save
-
-Responsible for serialization, save slots, autosaving, save versioning, and migrations.
-
-## Audio
-
-Responsible for music, sound effects, semantic audio cues, and the Unity audio implementation.
-
-## Presentation
-
-Responsible for UI, sprite rendering, camera, animation, transitions, player input, and visual effects.
-
----
-
-# Recommended Folder Structure
-
-```text
-Assets/
-├── Game/
-│   ├── Bootstrap/
-│   │   ├── GameBootstrapper.cs
-│   │   ├── GameCompositionRoot.cs
-│   │   └── SceneInstaller.cs
-│   ├── Shared/
-│   │   ├── Domain/
-│   │   ├── Application/
-│   │   ├── Infrastructure/
-│   │   └── Presentation/
-│   ├── Narrative/
-│   │   ├── Domain/
-│   │   │   ├── StorySession.cs
-│   │   │   ├── NarrativeNode.cs
-│   │   │   ├── NarrativeChoice.cs
-│   │   │   ├── NarrativeCondition.cs
-│   │   │   ├── NarrativeEffect.cs
-│   │   │   └── Events/
-│   │   ├── Application/
-│   │   │   ├── StartScenario/
-│   │   │   ├── AdvanceDialogue/
-│   │   │   ├── SelectChoice/
-│   │   │   └── GetCurrentNarrative/
-│   │   ├── Infrastructure/
-│   │   │   └── ScriptableObjectNarrativeRepository.cs
-│   │   ├── Authoring/
-│   │   │   ├── NarrativeNodeAsset.cs
-│   │   │   ├── ChoiceAsset.cs
-│   │   │   └── ScenarioAsset.cs
-│   │   └── Presentation/
-│   │       ├── DialogueView.cs
-│   │       ├── ChoicePanel.cs
-│   │       └── NarrativePresenter.cs
-│   ├── Progression/
-│   │   ├── Domain/
-│   │   ├── Application/
-│   │   ├── Infrastructure/
-│   │   └── Presentation/
-│   ├── Room/
-│   │   ├── Domain/
-│   │   ├── Application/
-│   │   ├── Authoring/
-│   │   └── Presentation/
-│   ├── Feed/
-│   │   ├── Domain/
-│   │   ├── Application/
-│   │   ├── Authoring/
-│   │   └── Presentation/
-│   ├── Save/
-│   └── Audio/
-├── Art/
-├── Audio/
-├── Scenes/
-└── Settings/
-```
-
-Use assembly definitions for major layers where useful:
-
-```text
-Game.Narrative.Domain
-Game.Narrative.Application
-Game.Narrative.Infrastructure
-Game.Narrative.Presentation
-```
-
-Dependency rules:
-
-```text
-Presentation → Application → Domain
-Infrastructure → Application and Domain
-Domain → nothing
-```
-
-The domain assembly must not reference Unity assemblies.
-
----
-
-# Authoritative Runtime State
+# Authoritative Game State
 
 Use one authoritative `GameSession`.
 
 ```csharp
 public sealed class GameSession
 {
-    public StorySession Story { get; }
-    public PlayerProgression Progression { get; }
-    public RoomState Room { get; }
-    public FeedState Feed { get; }
-
-    public GameSession(
-        StorySession story,
-        PlayerProgression progression,
-        RoomState room,
-        FeedState feed)
-    {
-        Story = story;
-        Progression = progression;
-        Room = room;
-        Feed = feed;
-    }
+    public NarrativeProgressState NarrativeProgress { get; }
+    public RelationshipState Relationships { get; }
+    public ChoiceHistoryState ChoiceHistory { get; }
+    public StoryFlagState StoryFlags { get; }
 }
 ```
 
 Rules:
 
-- `GameSession` is the source of truth for current game state.
-- MonoBehaviours must not own persistent narrative or progression state.
-- Scene transitions must not destroy authoritative runtime state.
-- Save data must be produced from `GameSession`.
-- Presenters may cache view state, but not authoritative game state.
+- `GameSession` is the single source of truth.
+- Relationship scores must not be stored in UI components.
+- Current scene IDs must not be inferred from active GameObjects.
+- Save data must be created from `GameSession`.
+- Scene transitions must not destroy persistent state.
 
 ---
 
-# Narrative Architecture
+# Relationship Model
 
-Represent the story as a directed graph.
+Each character has an independent integer score.
 
 ```csharp
-public sealed record NarrativeNode(
-    string Id,
-    IReadOnlyList<NarrativeBeat> Beats,
-    IReadOnlyList<NarrativeChoice> Choices,
-    string? AutomaticNextNodeId);
+public sealed class RelationshipState
+{
+    private readonly Dictionary<CharacterId, int> _scores = new();
+
+    public int GetScore(CharacterId characterId)
+    {
+        return _scores.GetValueOrDefault(characterId);
+    }
+
+    public void ChangeScore(CharacterId characterId, int amount)
+    {
+        _scores[characterId] = GetScore(characterId) + amount;
+    }
+}
 ```
 
+Scores are not binary.
+
+```text
+(A, B, C) = (1, 0, 0)
+(A, B, C) = (0, 1, 1)
+(A, B, C) = (3, -2, 4)
+```
+
+Every meaningful choice must define at least one relationship effect.
+
 ```csharp
-public sealed record NarrativeChoice(
-    string Id,
-    string Text,
-    string DestinationNodeId,
-    IReadOnlyList<ChoiceCondition> Conditions,
-    IReadOnlyList<ChoiceEffect> Effects);
+public sealed record RelationshipScoreChoiceEffect(
+    CharacterId CharacterId,
+    int Amount) : IChoiceEffect;
+```
+
+Do not place score mutations inside button click listeners.
+
+---
+
+# Narrative Scene Model
+
+Use `NarrativeScene`, not `Scene`, for story content.
+
+```csharp
+public sealed record NarrativeScene(
+    NarrativeSceneId Id,
+    MajorSceneId MajorSceneId,
+    IReadOnlyList<NarrativeBeat> Beats,
+    IReadOnlyList<NarrativeChoice> Choices,
+    IReadOnlyList<NarrativeSceneTransition> Transitions);
 ```
 
 ```csharp
 public sealed record NarrativeBeat(
-    string SpeakerId,
+    CharacterId? SpeakerId,
     string Text,
+    string? CharacterSpriteCue,
+    string? BackgroundCue,
     string? AnimationCue,
-    string? CameraCue,
     string? AudioCue);
 ```
 
-Each narrative node may contain dialogue or visual beats, optional phone-feed content, choices, entry conditions, effects, destination nodes, semantic animation cues, camera cues, audio cues, and educational tags.
+```csharp
+public sealed record NarrativeChoice(
+    ChoiceId Id,
+    string Text,
+    IReadOnlyList<IChoiceEffect> Effects,
+    NarrativeSceneId? DirectDestinationSceneId);
+```
 
-Do not hardcode story progression into MonoBehaviours or UI components.
+A major scene may contain several conditional subscenes.
+
+```text
+S2
+├── S2_A_Trusting
+├── S2_BC_Allied
+├── S2_A_Hostile
+└── S2_Default
+```
+
+Use score ranges and combined conditions. Do not create a subscene for every exact score vector.
 
 ---
 
-# ScriptableObject Rules
+# Scenario Factory
 
-Use ScriptableObjects only for authoring and editor workflows.
+All runtime scenario construction must go through `ScenarioFactory`.
 
 ```csharp
-[CreateAssetMenu(menuName = "Game/Narrative/Node")]
-public sealed class NarrativeNodeAsset : ScriptableObject
+public sealed class ScenarioFactory
 {
-    [SerializeField] private string id;
-    [SerializeField] private NarrativeBeatData[] beats;
-    [SerializeField] private NarrativeChoiceData[] choices;
-
-    public NarrativeNode ToDomain()
+    public NarrativeScene CreateScenario(
+        NarrativeSceneAsset asset)
     {
-        // Validate and convert to an immutable runtime definition.
+        // Validate authoring data.
+        // Convert it into pure runtime objects.
+        // Return an immutable NarrativeScene.
     }
 }
 ```
 
-Required flow:
+`ScenarioFactory` constructs scenarios. It does not select which scenario runs next.
+
+---
+
+# Conditional Subscene Selection
+
+Use the Specification pattern.
+
+```csharp
+public interface INarrativeSceneSpecification
+{
+    bool IsSatisfiedBy(GameSession gameSession);
+}
+```
+
+Required specifications may include:
 
 ```text
-ScriptableObject Authoring Asset
-        ↓
-Validation
-        ↓
-Pure Runtime Definition
-        ↓
-Game Session
+MinimumRelationshipScoreSpecification
+MaximumRelationshipScoreSpecification
+RelationshipScoreRangeSpecification
+PreviousChoiceSelectedSpecification
+StoryFlagSetSpecification
+NarrativeSceneCompletedSpecification
+AlwaysSatisfiedSpecification
 ```
 
-Rules:
-
-- Never mutate ScriptableObject authoring assets at runtime.
-- Never use ScriptableObjects as save-game state.
-- Convert assets into pure runtime objects during loading.
-- Validate duplicate IDs, missing references, invalid cues, and unreachable nodes.
-
----
-
-# Application Layer
-
-Use one handler per meaningful player action.
-
-Recommended commands:
+Composite specifications:
 
 ```text
-StartGameCommand
-StartScenarioCommand
-AdvanceDialogueCommand
-SelectChoiceCommand
-PurchaseRoomUpgradeCommand
-ApplyRoomDegradationCommand
-RestartGameCommand
-SaveGameCommand
-LoadGameCommand
+AllSceneConditionsCompositeSpecification
+AnySceneConditionsCompositeSpecification
+NotSceneConditionCompositeSpecification
 ```
 
-Example:
-
-```csharp
-public sealed record SelectChoiceCommand(
-    string NodeId,
-    string ChoiceId);
-```
-
-```csharp
-public sealed class SelectChoiceHandler
-{
-    private readonly GameSession _session;
-    private readonly IGameEventPublisher _events;
-
-    public SelectChoiceHandler(
-        GameSession session,
-        IGameEventPublisher events)
-    {
-        _session = session;
-        _events = events;
-    }
-
-    public void Handle(SelectChoiceCommand command)
-    {
-        var result = _session.Story.SelectChoice(
-            command.NodeId,
-            command.ChoiceId,
-            _session);
-
-        foreach (var gameEvent in result.Events)
-        {
-            _events.Publish(gameEvent);
-        }
-    }
-}
-```
-
-Use lightweight queries when presentation needs prepared read models:
-
-```text
-GetCurrentNarrativeView
-GetAvailableChoices
-GetRoomViewState
-GetTokenBalance
-GetCurrentFeed
-```
-
-Do not add handlers, repositories, or interfaces for trivial private helper logic.
+Specifications read from `GameSession`. They must not query Unity views.
 
 ---
 
-# State Machines
-
-Use two separate state machines.
-
-## Game Flow State Machine
-
-```text
-Boot
-→ MainMenu
-→ Loading
-→ Playing
-→ Paused
-→ Ending
-→ GameOver
-```
+# Scene Selection Strategy
 
 ```csharp
-public interface IGameState
+public interface INarrativeSceneSelectionStrategy
 {
-    void Enter();
-    void Exit();
-}
-```
-
-## Narrative Presentation State Machine
-
-```text
-EnteringScene
-→ ShowingDialogue
-→ ShowingFeed
-→ WaitingForChoice
-→ ApplyingChoice
-→ ShowingConsequence
-→ Transitioning
-```
-
-Rules:
-
-- Keep game flow separate from narrative presentation flow.
-- Do not create one state for every animation clip.
-- Do not combine scene loading, UI state, dialogue state, and animation state into one giant state machine.
-- States coordinate behaviour; they do not own all game data.
-
----
-
-# Event Architecture
-
-Use an injected, non-static event publisher scoped to the current game runtime.
-
-Recommended events:
-
-```text
-NarrativeNodeEntered
-DialogueBeatStarted
-ChoiceSelected
-ChoiceEffectsApplied
-TokensChanged
-RoomUpgradeUnlocked
-RoomStateChanged
-FeedChanged
-ModifierApplied
-ModifierExpired
-PrisonTriggered
-GameEnded
-```
-
-Rules:
-
-- Do not use a static event bus.
-- Subscribers must be explicitly registered and disposed.
-- Events represent completed facts.
-- Commands request actions; events report what happened.
-- Avoid long event chains that obscure control flow.
-
----
-
-# Buff and Debuff Architecture
-
-Use a lightweight modifier system. Do not create a large stat system.
-
-```csharp
-public interface IGameModifier
-{
-    string Id { get; }
-    ModifierDuration Duration { get; }
-}
-```
-
-Examples:
-
-```csharp
-public sealed record BetterWifiModifier() : IGameModifier
-{
-    public string Id => "better-wifi";
-    public ModifierDuration Duration => ModifierDuration.Permanent;
-}
-```
-
-```csharp
-public sealed record NotificationSpamModifier(int RemainingScenes)
-    : IGameModifier
-{
-    public string Id => "notification-spam";
-    public ModifierDuration Duration => ModifierDuration.Temporary;
-}
-```
-
-Use policies or strategies for behaviour:
-
-```csharp
-public interface IChoiceAvailabilityPolicy
-{
-    IReadOnlyList<NarrativeChoice> Filter(
-        IReadOnlyList<NarrativeChoice> choices,
-        GameSession session);
-}
-```
-
-Examples:
-
-- `BetterWifiChoicePolicy` exposes an additional source.
-- `NotificationSpamChoicePolicy` inserts a distraction.
-- `CrackedPhonePresentationPolicy` obscures metadata.
-- `ComfortableBedTimingPolicy` increases decision time.
-
-The domain decides what is available or allowed. Presentation decides how it appears.
-
----
-
-# Progression and Room Tokens
-
-Use one simple currency: room tokens.
-
-Rules:
-
-- Choices may award or remove tokens.
-- Tokens unlock cosmetic room upgrades.
-- Some upgrades may provide one small, explicit modifier.
-- Negative choices may provide a larger immediate reward but create later consequences.
-- Do not create multiple currencies unless explicitly required.
-
-Possible room upgrades:
-
-- pillow;
-- blanket;
-- lamp;
-- plant;
-- posters;
-- desk;
-- better phone;
-- second screen;
-- window view;
-- decorative items.
-
-The room is a visual representation of progression and consequences.
-
----
-
-# Room State
-
-Keep room state separate from narrative definitions.
-
-```csharp
-public sealed class RoomState
-{
-    private readonly HashSet<string> _unlockedItems = new();
-
-    public RoomTier Tier { get; private set; }
-
-    public IReadOnlyCollection<string> UnlockedItems =>
-        _unlockedItems;
-
-    public void Unlock(string itemId)
-    {
-        _unlockedItems.Add(itemId);
-    }
-
-    public void SetTier(RoomTier tier)
-    {
-        Tier = tier;
-    }
-}
-```
-
-Rules:
-
-- Save item IDs, not GameObject references.
-- Keep visual bindings in presentation.
-- Do not let room decorations directly modify progression.
-- Apply upgrades through use cases or domain methods.
-
----
-
-# Phone and Doom-Scrolling Presentation
-
-Separate the visual composition into layers:
-
-```text
-Room Background
-Player Hands Sprite
-Phone Frame Sprite
-Phone Screen Render Surface
-Feed UI
-Choice Overlay
-Foreground Effects
-```
-
-Use a dedicated phone presenter.
-
-```csharp
-public sealed class PhonePresenter : MonoBehaviour
-{
-    [SerializeField] private Animator handAnimator;
-    [SerializeField] private FeedView feedView;
-    [SerializeField] private ChoicePanel choicePanel;
-
-    public void PlayScroll()
-    {
-        handAnimator.Play("DoomScroll");
-        feedView.ScrollToNextPost();
-    }
-}
-```
-
-Rules:
-
-- The feed system decides which post appears.
-- The presentation layer animates scrolling.
-- Hand animation must not own feed state.
-- Phone content and hand sprite animation must be independently controllable.
-- Keep room background separate from hand and phone layers.
-
----
-
-# Animation Architecture
-
-Use Unity Animator only as a rendering mechanism.
-
-Prefer small isolated controllers:
-
-```text
-HandsAnimator
-PhoneAnimator
-RoomAnimator
-EffectsAnimator
-```
-
-Narrative data references semantic cues:
-
-```json
-{
-  "animationCue": "player.scroll"
-}
-```
-
-Use an adapter:
-
-```csharp
-public interface IAnimationCuePlayer
-{
-    void Play(string cueId);
-}
-```
-
-Rules:
-
-- Narrative code must not reference Animator parameter names.
-- Animation cue IDs must be semantic and stable.
-- Validate cue IDs before builds.
-- Sprite sheets must use consistent frame sizes and nearest-neighbour filtering.
-- Animation state must remain separate from persistent game state.
-
----
-
-# Save Architecture
-
-Save only pure serializable data.
-
-```csharp
-[Serializable]
-public sealed class SaveGameData
-{
-    public int Version;
-    public string CurrentNodeId;
-    public List<string> SelectedChoiceIds;
-    public int Tokens;
-    public List<string> RoomItemIds;
-    public List<string> ModifierIds;
-    public bool IsInPrison;
-}
-```
-
-Port:
-
-```csharp
-public interface ISaveGameStore
-{
-    void Save(SaveGameData data);
-    SaveGameData? Load();
-    bool Exists();
-    void Delete();
+    NarrativeSceneDefinition SelectScene(
+        IReadOnlyList<NarrativeSceneDefinition> candidates,
+        GameSession gameSession);
 }
 ```
 
 Initial implementation:
 
 ```text
-JsonFileSaveGameStore
+HighestPriorityNarrativeSceneSelectionStrategy
 ```
 
-Use `Application.persistentDataPath`.
+Selection flow:
 
-Every save must contain a version number.
+1. retrieve candidates for the next major scene;
+2. retain candidates whose specifications pass;
+3. order by priority descending;
+4. use a deterministic tie-breaker;
+5. select the winner;
+6. fall back to an always-eligible default scene.
 
-Rules:
+Every major scene after S1 must have a fallback subscene.
 
-- Never serialize MonoBehaviours or GameObjects.
-- Never save ScriptableObject references as authoritative state.
-- Save stable IDs and primitive values.
-- Autosave after meaningful choices and upgrades.
-- Keep save mapping separate from domain logic.
-
----
-
-# Dependency Composition
-
-Create dependencies once in a composition root.
-
-Use manual dependency injection initially. Do not introduce a DI framework unless construction becomes materially difficult.
+Do not use randomness unless explicitly requested.
 
 ---
 
-# Scene Structure
+# Choice Effects
 
-Recommended scenes:
+```csharp
+public interface IChoiceEffect
+{
+    void Apply(GameSession gameSession);
+}
+```
+
+Required examples:
 
 ```text
-Bootstrap.unity
+RelationshipScoreChoiceEffect
+SetStoryFlagChoiceEffect
+RemoveStoryFlagChoiceEffect
+RecordChoiceChoiceEffect
+CompleteNarrativeSceneChoiceEffect
+```
+
+A choice may apply multiple effects.
+
+```text
+Choice: Tell Character A the truth
+
+A: +2
+B: -1
+Set flag: truth_revealed
+```
+
+Effect classes must include `ChoiceEffect` in their names.
+
+---
+
+# Commands and Command Handlers
+
+Required initial commands:
+
+```text
+StartNewGameCommand
+SelectChoiceCommand
+CompleteNarrativeSceneCommand
+SelectNextNarrativeSceneCommand
+SaveGameCommand
+LoadGameCommand
+RestartGameCommand
+```
+
+Required handlers:
+
+```text
+StartNewGameCommandHandler
+SelectChoiceCommandHandler
+CompleteNarrativeSceneCommandHandler
+SelectNextNarrativeSceneCommandHandler
+SaveGameCommandHandler
+LoadGameCommandHandler
+RestartGameCommandHandler
+```
+
+UI handlers may dispatch commands. They must not apply domain effects themselves.
+
+---
+
+# Runtime State Machine
+
+Use:
+
+```text
+MainMenuState
+LoadingNarrativeSceneState
+PresentingDialogueState
+WaitingForChoiceState
+ApplyingChoiceState
+TransitioningNarrativeSceneState
+EndingState
+```
+
+```csharp
+public interface INarrativeFlowState
+{
+    void Enter();
+    void Exit();
+}
+```
+
+```csharp
+public sealed class NarrativeFlowStateMachine
+{
+    private INarrativeFlowState? _currentState;
+
+    public void ChangeState(INarrativeFlowState nextState)
+    {
+        _currentState?.Exit();
+        _currentState = nextState;
+        _currentState.Enter();
+    }
+}
+```
+
+The state machine controls current behaviour. It must not replace `GameSession`.
+
+---
+
+# Events
+
+Use an injected, non-static event publisher.
+
+Examples:
+
+```text
+NewGameStartedEvent
+NarrativeSceneEnteredEvent
+NarrativeBeatChangedEvent
+ChoiceSelectedEvent
+RelationshipScoreChangedEvent
+NarrativeSceneCompletedEvent
+NarrativeSceneSelectedEvent
+GameEndedEvent
+```
+
+Commands request actions. Events report completed facts.
+
+---
+
+# Presentation Architecture
+
+Use presenters:
+
+```text
+NarrativeScenePresenter
+CharacterSpritePresenter
+BackgroundPresenter
+DialoguePresenter
+ChoicePresenter
+RelationshipDebugPresenter
+```
+
+Suggested hierarchy:
+
+```text
+NarrativeSceneRoot
+├── BackgroundView
+├── LeftCharacterView
+├── RightCharacterView
+├── DialogueView
+│   ├── SpeakerNameText
+│   └── DialogueText
+├── ChoiceView
+└── TransitionView
+```
+
+Presenters do not evaluate narrative conditions.
+
+---
+
+# Character Sprite System
+
+Use transparent PNG sprites with semantic cues:
+
+```text
+characterA.neutral
+characterA.concerned
+characterA.angry
+characterA.smiling
+```
+
+Narrative beats reference cues, not asset paths.
+
+```csharp
+public interface ICharacterSpriteAdapter
+{
+    void ShowSprite(string spriteCue);
+    void HideSprite();
+}
+```
+
+Unity-specific rendering belongs in `UnityCharacterSpriteAdapter`.
+
+---
+
+# ScriptableObject Authoring
+
+Use ScriptableObjects for:
+
+- narrative scenes;
+- dialogue beats;
+- choices;
+- relationship effects;
+- transition conditions;
+- character sprite catalogues;
+- background catalogues.
+
+Required flow:
+
+```text
+NarrativeSceneAsset
+→ ScenarioFactory
+→ NarrativeScene
+→ GameSession
+```
+
+Never use ScriptableObjects as runtime save state.
+
+---
+
+# Save Architecture
+
+Use:
+
+```text
+GameSessionMemento
+GameSessionMementoFactory
+JsonSaveGameRepository
+```
+
+```csharp
+[Serializable]
+public sealed class GameSessionMemento
+{
+    public int Version;
+    public string CurrentNarrativeSceneId;
+    public Dictionary<string, int> RelationshipScores;
+    public List<string> SelectedChoiceIds;
+    public List<string> StoryFlags;
+    public List<string> CompletedNarrativeSceneIds;
+}
+```
+
+Save stable IDs and primitive values only.
+
+---
+
+# Main Menu to Demo Scene
+
+Initial flow:
+
+```text
 MainMenu.unity
-Game.unity
+→ Start button
+→ StartNewGameCommand
+→ Game.unity
+→ load S1
 ```
 
-Suggested `Game` hierarchy:
+Prefer one `Game.unity` Unity scene for all narrative content.
 
-```text
-GameRoot
-├── RoomRoot
-├── PhoneRoot
-├── UIRoot
-├── AudioRoot
-├── TransitionRoot
-└── DebugRoot
-```
+Narrative scenes are data and presentation changes inside `Game.unity`.
 
-Rules:
-
-- Narrative nodes are data, not Unity scenes.
-- Do not create one scene per story beat.
-- Use additive scenes only for genuinely independent locations or heavy content.
-- Scene loading must not reset authoritative runtime state.
+Do not create one Unity scene file for every dialogue scene.
 
 ---
 
-# Validation Requirements
+# Validation
+
+Create `NarrativeSceneValidator`.
 
 Validate:
 
-- duplicate node IDs;
-- missing destination nodes;
-- choices with no destination;
-- invalid automatic-next references;
-- unreachable nodes;
-- missing speaker IDs;
-- missing animation cues;
-- missing audio cues;
-- invalid room item IDs;
-- invalid modifier IDs;
-- invalid condition types;
-- invalid effect payloads;
-- circular paths without intended exits.
+- duplicate scene IDs;
+- missing major-scene IDs;
+- missing fallback subscenes;
+- invalid destination IDs;
+- choices without relationship effects;
+- missing character IDs;
+- missing sprite cues;
+- missing background cues;
+- invalid specifications;
+- unreachable scenes;
+- ambiguous equal-priority scenes.
 
-Expose validation through an editor menu, Play Mode entry checks, and build preprocessing.
-
-Builds should fail on critical narrative validation errors.
+Critical errors must block builds.
 
 ---
 
 # Testing Requirements
 
-## Domain Tests
-
-Test without Unity:
+Domain tests:
 
 ```text
-Selecting a valid choice moves to the destination node
-Unavailable choices are rejected
-Choice effects modify tokens correctly
-Room upgrades unlock correctly
-Modifiers apply and expire correctly
-Prison conditions end the game
-Repeated choices cannot be selected twice
-Save restoration reproduces session state
-Invalid narrative references fail validation
+Choice effects update relationship scores
+Negative and positive scores are supported
+Score-range specifications evaluate correctly
+Composite specifications combine correctly
+Highest-priority eligible subscene is selected
+Fallback subscene is selected when required
+Previous choices affect later selection
+Save restoration recreates relationship state
 ```
 
-## Application Tests
-
-Use fake ports:
+Application tests:
 
 ```text
-SelectChoiceHandler publishes expected events
-SaveGameHandler calls the save store
-StartScenarioHandler loads the correct scenario
-PurchaseRoomUpgradeHandler validates cost
-LoadGameHandler restores state correctly
+SelectChoiceCommandHandler applies every effect
+SelectNextNarrativeSceneCommandHandler selects the expected scene
+StartNewGameCommandHandler starts S1
+SaveGameCommandHandler creates a GameSessionMemento
 ```
 
-## Play Mode Tests
-
-Use only for Unity integration:
-
-- UI wiring;
-- animations;
-- scene transitions;
-- sprite rendering;
-- visual room bindings;
-- input;
-- audio cues.
-
-Most game logic must remain testable in Edit Mode as pure C#.
-
----
-
-# Pattern Usage
-
-| Pattern | Use |
-|---|---|
-| State Machine | Game flow and narrative presentation phases |
-| Command | Player actions |
-| Observer / Events | Independent reactions to completed actions |
-| Strategy / Policy | Choice filtering and modifier behaviour |
-| Repository | Loading story definitions and save data |
-| Factory | Creating new or restored sessions |
-| Adapter | Unity animation, audio, persistence, and UI |
-| Presenter | Mapping runtime state into Unity visuals |
-| Composite | Combining narrative conditions |
-| Specification | Reusable narrative and choice conditions |
-
-Do not create abstractions merely to claim a pattern is used.
+Play Mode tests should cover only Unity integration.
 
 ---
 
 # Naming Rules
 
-Use names that describe both domain intent and the architectural pattern being implemented.
+Any type implementing a pattern must include the pattern name.
 
-## Pattern Names Must Be Explicit
-
-Any class, interface, method, or function that exists primarily to implement a recognised pattern must include that pattern name in its identifier.
-
-Examples:
+Required examples:
 
 ```text
 ScenarioFactory
-GameSessionFactory
-NarrativeNodeFactory
-SaveGameRepository
-StoryDefinitionRepository
-BetterWifiChoicePolicy
-ContextCheckSpecification
-GameFlowStateMachine
-NarrativePresentationStateMachine
-GameEventPublisher
-NarrativePresenter
-UnityAnimationCueAdapter
-```
-
-Do not hide pattern roles behind vague names.
-
-Bad:
-
-```text
-ScenarioBuilder
-ScenarioCreator
-ScenarioService
-ScenarioProvider
-ScenarioMaker
-```
-
-Good:
-
-```text
-ScenarioFactory
-```
-
-Bad:
-
-```text
-StoryStore
-StoryDataSource
-StoryProvider
-```
-
-Good:
-
-```text
-StoryRepository
-```
-
-Bad:
-
-```text
-ChoiceRule
-ChoiceFilter
-ChoiceChecker
-```
-
-Good:
-
-```text
-ChoiceAvailabilityPolicy
-ChoiceConditionSpecification
-```
-
-Bad:
-
-```text
-GameFlow
-FlowController
-GameModeHandler
-```
-
-Good:
-
-```text
-GameFlowStateMachine
-```
-
-## Required Pattern Suffixes
-
-Use these suffixes consistently:
-
-| Pattern | Required naming |
-|---|---|
-| Factory | `*Factory` |
-| Repository | `*Repository` |
-| Adapter | `*Adapter` |
-| Presenter | `*Presenter` |
-| State machine | `*StateMachine` |
-| State | `*State` |
-| Command | `*Command` |
-| Command handler | `*CommandHandler` |
-| Query | `*Query` |
-| Query handler | `*QueryHandler` |
-| Policy | `*Policy` |
-| Strategy | `*Strategy` |
-| Specification | `*Specification` |
-| Event | `*Event` |
-| Event publisher | `*EventPublisher` |
-| Event subscriber | `*EventSubscriber` |
-| Mapper | `*Mapper` |
-| Validator | `*Validator` |
-| Composition root | `*CompositionRoot` |
-| Facade | `*Facade` |
-| Decorator | `*Decorator` |
-| Composite | `*Composite` |
-
-## Method and Function Naming
-
-Methods and functions that directly express a pattern operation should also reflect that role when the pattern would otherwise be unclear.
-
-Examples:
-
-```csharp
-Scenario CreateScenario(...)
-GameSession CreateNewSession(...)
-GameSession RestoreSession(...)
-bool IsSatisfiedBy(GameSession session)
-NarrativeChoice ApplyPolicy(...)
-SaveGameData MapToSaveData(...)
-void PublishEvent(IGameEvent gameEvent)
-```
-
-Do not force pattern words into every ordinary domain method.
-
-Good domain methods:
-
-```csharp
-storySession.SelectChoice(...)
-roomState.Unlock(...)
-feedState.Advance(...)
-```
-
-Pattern names are required when the type or function exists because of the pattern. They are not required for normal domain behaviour.
-
-## Domain Naming
-
-Use precise domain names:
-
-```text
+NarrativeSceneRepository
+HighestPriorityNarrativeSceneSelectionStrategy
+MinimumRelationshipScoreSpecification
+AllSceneConditionsCompositeSpecification
 SelectChoiceCommandHandler
-StorySession
-NarrativeNode
-RoomUpgrade
-FeedPost
-PrisonTriggeredEvent
-BetterWifiModifier
-ScenarioFactory
+NarrativeFlowStateMachine
+WaitingForChoiceState
+NarrativeScenePresenter
+UnityCharacterSpriteAdapter
+GameSessionMementoFactory
+GameCompositionRoot
 ```
 
-Avoid vague names:
+Avoid vague names such as:
 
 ```text
-Manager
-Helper
-Utility
-Processor
-Controller
-System
-Data
-Thing
+GameManager
+SceneManager
+StoryHelper
+ChoiceUtility
+RelationshipProcessor
+ScenarioService
 ```
 
-Use `Controller` only for input or orchestration at a presentation boundary.
-
-Use `Manager` only when no more precise domain or pattern name exists.
-
 ---
 
-# Coding Rules
-
-- Prefer small cohesive classes.
-- Prefer composition over inheritance.
-- Keep domain methods intention-revealing.
-- Avoid public mutable fields.
-- Avoid service locators.
-- Avoid hidden static state.
-- Avoid reflection-based magic unless required by Unity.
-- Fail fast on invalid IDs.
-- Use explicit result objects for expected failures.
-- Use exceptions for programming errors and invalid configuration.
-- Keep UI code free of narrative rules.
-- Keep domain code free of Unity APIs.
-- Keep authoring data separate from runtime state.
-- Keep presentation effects separate from persistent state changes.
-
----
-
-# Recommended Initial Implementation Order
+# Initial Implementation Order
 
 ```text
-1. GameSession
-2. Narrative graph domain model
-3. ScriptableObject narrative authoring assets
-4. Narrative validation
-5. SelectChoiceHandler
-6. NarrativePresenter
-7. Scoped GameEventBus
-8. JSON save store
-9. RoomState and RoomPresenter
-10. FeedState and FeedPresenter
-11. Game flow state machine
-12. Animation cue adapter
-13. Token and room upgrade flow
-14. Modifier policies
-15. Prison ending
+1. CharacterId and NarrativeSceneId
+2. RelationshipState
+3. GameSession
+4. NarrativeScene, NarrativeBeat, NarrativeChoice
+5. IChoiceEffect and RelationshipScoreChoiceEffect
+6. INarrativeSceneSpecification implementations
+7. HighestPriorityNarrativeSceneSelectionStrategy
+8. ScenarioFactory
+9. ScriptableObject authoring assets
+10. SelectChoiceCommandHandler
+11. SelectNextNarrativeSceneCommandHandler
+12. NarrativeFlowStateMachine
+13. NarrativeScenePresenter
+14. Main menu connection to S1
+15. GameSessionMemento and JSON saving
 ```
-
-Do not begin with analytics, a remote backend, runtime AI, or advanced editor tooling.
 
 ---
 
-# Required Runtime Flow
-
-```text
-Player presses a choice button
-        ↓
-ChoicePanel emits a choice ID
-        ↓
-SelectChoiceCommand is dispatched
-        ↓
-SelectChoiceHandler executes
-        ↓
-StorySession validates and applies the choice
-        ↓
-Choice effects update progression, room, and feed
-        ↓
-Domain events are published
-        ↓
-Presenters update Unity objects
-        ↓
-Autosave stores pure session data
-```
-
-Any implementation that allows UI components or scene objects to directly modify progression should be rejected.
-
----
-
-# Scope Control
-
-The initial version is a local single-player game.
+# Scope Restrictions
 
 Do not add unless explicitly requested:
 
+- free movement;
+- combat;
+- room upgrades;
+- dopamine reward systems;
+- currencies;
+- inventory;
 - multiplayer;
-- live social-media integrations;
-- web scraping;
-- runtime generative AI;
 - remote backend;
-- cloud saves;
-- procedural dialogue;
-- complex inventory systems;
-- multiple currencies;
-- extensive RPG statistics;
-- microservices;
-- event sourcing.
+- runtime AI;
+- procedural story generation;
+- voice acting;
+- complex animation systems.
 
-The architecture must stay clean without becoming enterprise-heavy.
+The initial goal is a clean branching narrative demo driven by relationship scores and difficult choices.

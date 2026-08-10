@@ -1,8 +1,8 @@
 using System;
 using System.Collections;
+using Bedrot.Bootstrap;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace Game.Presentation.MainMenu
@@ -19,7 +19,7 @@ namespace Game.Presentation.MainMenu
 
         [Header("Transition")]
         [SerializeField, Min(0.1f)] private float fadeDuration = 0.8f;
-        [SerializeField] private string destinationSceneName = "Game";
+        [SerializeField] private GameCompositionRoot gameCompositionRoot;
 
         private Camera _camera;
         private Image _fadeOverlay;
@@ -30,8 +30,8 @@ namespace Game.Presentation.MainMenu
             _camera = Camera.main;
             if (_camera == null)
                 throw new InvalidOperationException("MainMenuPresenter requires a camera tagged MainCamera.");
-            if (string.IsNullOrWhiteSpace(destinationSceneName))
-                throw new InvalidOperationException("MainMenuPresenter requires a destination scene name.");
+            if (gameCompositionRoot == null)
+                throw new InvalidOperationException("MainMenuPresenter requires a GameCompositionRoot reference.");
 
             _camera.backgroundColor = Color.black;
             FitSceneLayers();
@@ -42,7 +42,12 @@ namespace Game.Presentation.MainMenu
         private void Update()
         {
             if (!_isTransitioning && Pointer.current != null && Pointer.current.press.wasPressedThisFrame)
-                StartCoroutine(FadeToDestinationScene());
+                StartNewGame();
+        }
+
+        public void StartNewGame()
+        {
+            if (!_isTransitioning) StartCoroutine(FadeToNewGame());
         }
 
         private void FitSceneLayers()
@@ -109,7 +114,7 @@ namespace Game.Presentation.MainMenu
             _fadeOverlay.raycastTarget = false;
         }
 
-        private IEnumerator FadeToDestinationScene()
+        private IEnumerator FadeToNewGame()
         {
             _isTransitioning = true;
             float elapsed = 0f;
@@ -123,7 +128,7 @@ namespace Game.Presentation.MainMenu
             }
 
             _fadeOverlay.color = Color.black;
-            SceneManager.LoadScene(destinationSceneName, LoadSceneMode.Single);
+            gameCompositionRoot.DispatchStartNewGameCommand();
         }
     }
 }
