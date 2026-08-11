@@ -24,6 +24,7 @@ namespace Bedrot.Narrative.Presentation
         public void PresentScene(NarrativeScene scene)
         {
             _scene = scene ?? throw new ArgumentNullException(nameof(scene)); _beatIndex = 0;
+            dialoguePresenter?.BindAdvanceRequest(AdvanceDialogue);
             choicePresenter.HideChoices(); transitionPresenter?.SetVisible(false);
             _stateMachine.ChangeState(new LoadingNarrativeSceneState());
             if (_scene.Beats.Count == 0) { ShowChoicesOrEnd(); return; }
@@ -32,6 +33,7 @@ namespace Bedrot.Narrative.Presentation
         public void AdvanceDialogue()
         {
             if (_scene == null || _stateMachine.CurrentState is WaitingForChoiceState || _stateMachine.CurrentState is EndingState) return;
+            if (dialoguePresenter != null && dialoguePresenter.CompleteRevealImmediately()) return;
             if (++_beatIndex < _scene.Beats.Count) PresentCurrentBeat(); else ShowChoicesOrEnd();
         }
         private void PresentCurrentBeat()

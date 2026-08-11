@@ -61,6 +61,43 @@ namespace Bedrot.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator AdvanceCompletesTypewriterBeforeMovingToNextBeat()
+        {
+            NarrativeScenePresenter presenter = CreatePresenterRig(out DialoguePresenter dialogue, out _);
+            var textObject = new GameObject("DialogueText", typeof(RectTransform), typeof(Text));
+            textObject.transform.SetParent(dialogue.transform);
+            Text dialogueText = textObject.GetComponent<Text>();
+            SetField(dialogue, "dialogueText", dialogueText);
+            SetField(dialogue, "charactersPerSecond", 1f);
+            var scene = new NarrativeScene(
+                new NarrativeSceneId("TYPEWRITER_TEST"),
+                new MajorSceneId("TYPEWRITER"),
+                new[]
+                {
+                    new NarrativeBeat(new CharacterId("Linh"), "First line"),
+                    new NarrativeBeat(new CharacterId("Minh"), "Second line")
+                },
+                Array.Empty<NarrativeChoice>(),
+                Array.Empty<NarrativeSceneTransition>());
+
+            presenter.Bind(_ => { }, new GameEventPublisher());
+            presenter.PresentScene(scene);
+            Assert.That(dialogue.IsRevealing, Is.True);
+
+            presenter.AdvanceDialogue();
+            Assert.That(presenter.CurrentBeatIndex, Is.Zero);
+            Assert.That(dialogueText.text, Is.EqualTo("First line"));
+            Assert.That(dialogue.IsRevealing, Is.False);
+
+            presenter.AdvanceDialogue();
+            Assert.That(presenter.CurrentBeatIndex, Is.EqualTo(1));
+            Assert.That(dialogue.IsRevealing, Is.True);
+
+            UnityEngine.Object.Destroy(presenter.transform.root.gameObject);
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator OpeningSceneAppearsInNarrativePresenter()
         {
             NarrativeScenePresenter presenter = CreatePresenterRig(out _, out _);
