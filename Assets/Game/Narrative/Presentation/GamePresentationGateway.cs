@@ -11,13 +11,15 @@ namespace Bedrot.Narrative.Presentation
     {
         private NarrativeScenePresenter _presenter;
         private Action<ChoiceId> _selectChoice;
+        private Action<NarrativeSceneId> _completeScene;
         private IGameEventPublisher _events;
 
-        public void Bind(Action<ChoiceId> selectChoice, IGameEventPublisher events) { _selectChoice = selectChoice; _events = events; }
+        public void Bind(Action<ChoiceId> selectChoice, Action<NarrativeSceneId> completeScene, IGameEventPublisher events)
+        { _selectChoice = selectChoice; _completeScene = completeScene; _events = events; }
         public void PresentScene(NarrativeScene scene)
         {
             ResolveActiveScenePresenter();
-            _presenter.Bind(_selectChoice, _events); _presenter.PresentScene(scene);
+            _presenter.Bind(_selectChoice, _completeScene, _events); _presenter.PresentScene(scene);
         }
         public void EndGame(NarrativeSceneId finalSceneId) => _events?.Publish(new GameEndedEvent(finalSceneId));
 

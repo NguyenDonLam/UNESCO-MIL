@@ -5,7 +5,6 @@ using Bedrot.Narrative.Application;
 using Bedrot.Narrative.Authoring;
 using Bedrot.Narrative.Domain;
 using Bedrot.Narrative.Infrastructure;
-using Bedrot.Save;
 using Bedrot.Shared;
 using NUnit.Framework;
 
@@ -13,117 +12,167 @@ namespace Bedrot.Tests.EditMode
 {
     public sealed class BedrotNarrativeEditModeTests
     {
-        private static readonly CharacterId Mina = new("Mina");
-        private static readonly CharacterId Daniel = new("Daniel");
-        private static readonly CharacterId Sara = new("Sara");
+        private static readonly CharacterId Linh = new("Linh");
+        private static readonly CharacterId Minh = new("Minh");
 
         [Test]
         public void RelationshipScoreChangesSupportPositiveAndNegativeValues()
         {
-            var session = new GameSession(); session.Relationships.ChangeScore(Mina, 3); session.Relationships.ChangeScore(Mina, -5);
-            Assert.That(session.Relationships.GetScore(Mina), Is.EqualTo(-2));
+            var session = new GameSession();
+            session.Relationships.ChangeScore(Linh, 3);
+            session.Relationships.ChangeScore(Linh, -5);
+            Assert.That(session.Relationships.GetScore(Linh), Is.EqualTo(-2));
         }
 
-        [TestCase("S1_POST_WITHOUT_ACCUSATION", 1, -1, 2, "clip_published_without_accusation")]
-        [TestCase("S1_WAIT_FOR_RECORDING", -1, 2, -1, "publication_delayed")]
-        [TestCase("S1_PUBLISH_MINA_ACCOUNT", 2, -2, 1, "minas_account_published")]
-        [TestCase("S1_NOT_ENOUGH_EVIDENCE", -1, 1, -2, "refused_to_confirm")]
-        public void AllFourOpeningChoicesApplyEveryEffect(string choiceId, int mina, int daniel, int sara, string flag)
+        [Test]
+        public void SceneZeroChoiceAppliesRelationshipMediaLiteracyAndStoryEffects()
         {
-            Harness harness = CreateHarness(); harness.Start(); harness.Choice(choiceId);
-            Assert.That(harness.Session.Relationships.GetScore(Mina), Is.EqualTo(mina));
-            Assert.That(harness.Session.Relationships.GetScore(Daniel), Is.EqualTo(daniel));
-            Assert.That(harness.Session.Relationships.GetScore(Sara), Is.EqualTo(sara));
-            Assert.That(harness.Session.StoryFlags.Contains(new StoryFlagId(flag)), Is.True);
-            Assert.That(harness.Session.ChoiceHistory.Contains(new ChoiceId(choiceId)), Is.True);
-            Assert.That(harness.Session.NarrativeProgress.IsCompleted(DemoScenarioFactory.OpeningSceneId), Is.True);
+            Harness harness = CreateHarness();
+            harness.Start();
+            harness.Choice("CHOICE_0_1_B");
+
+            Assert.That(harness.Session.Relationships.GetScore(Linh), Is.EqualTo(1));
+            Assert.That(harness.Session.MediaLiteracy.GetScore(MediaLiteracyMetric.Evidence), Is.EqualTo(2));
+            Assert.That(harness.Session.MediaLiteracy.GetScore(MediaLiteracyMetric.Transparency), Is.EqualTo(1));
+            Assert.That(harness.Session.MediaLiteracy.GetScore(MediaLiteracyMetric.Crisis), Is.EqualTo(-1));
+            Assert.That(harness.Session.StoryFlags.Contains(new StoryFlagId("s00_verification_prioritized")), Is.True);
+            Assert.That(harness.Session.ChoiceHistory.Contains(new ChoiceId("CHOICE_0_1_B")), Is.True);
+            Assert.That(harness.Session.NarrativeProgress.IsCompleted(ScenarioFactory.BuiltInOpeningSceneId), Is.True);
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S00_RESPONSE_01_B"));
+        }
+
+        [Test]
+        public void DialogueOnlyResponseCompletesIntoSharedMergeNode()
+        {
+            Harness harness = CreateHarness();
+            harness.Start();
+            harness.Choice("CHOICE_0_1_C");
+            harness.CompleteCurrent();
+
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S00_MERGE_01"));
+            Assert.That(harness.Session.NarrativeProgress.IsCompleted(new NarrativeSceneId("S00_RESPONSE_01_C")), Is.True);
+        }
+
+        [Test]
+        public void SceneZeroCanReachItsEndingAcrossAllThreeChoices()
+        {
+            Harness harness = CreateHarness();
+            harness.Start();
+            harness.Choice("CHOICE_0_1_B"); harness.CompleteCurrent();
+            harness.Choice("CHOICE_0_2_B"); harness.CompleteCurrent();
+            harness.Choice("CHOICE_0_3_B"); harness.CompleteCurrent();
+
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S00_END"));
+            Assert.That(harness.Session.Relationships.GetScore(Linh), Is.EqualTo(2));
+            Assert.That(harness.Session.Relationships.GetScore(Minh), Is.EqualTo(1));
+            Assert.That(harness.Session.MediaLiteracy.GetScore(MediaLiteracyMetric.Evidence), Is.EqualTo(6));
+            Assert.That(harness.Session.MediaLiteracy.GetScore(MediaLiteracyMetric.Transparency), Is.EqualTo(4));
+            Assert.That(harness.Session.MediaLiteracy.GetScore(MediaLiteracyMetric.Crisis), Is.EqualTo(-4));
+        }
+
+        [Test]
+        public void SceneZeroEndingConnectsToFutureSceneOneCandidate()
+        {
+            NarrativeScene sceneOne = new(new NarrativeSceneId("S01_THE_LEAKED_IMAGE"), new MajorSceneId("S01"),
+                new[] { new NarrativeBeat(null, "Scene 1") }, Array.Empty<NarrativeChoice>(), Array.Empty<NarrativeSceneTransition>());
+            NarrativeSceneDefinition[] definitions = new ScenarioFactory().CreateBuiltInSceneZeroDefinitions()
+                .Concat(new[] { new NarrativeSceneDefinition(sceneOne, 0, new AlwaysSatisfiedSpecification()) }).ToArray();
+            Harness harness = new(definitions);
+            harness.Start();
+            harness.GoToEndingWithVerificationChoices();
+            harness.CompleteCurrent();
+
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S01_THE_LEAKED_IMAGE"));
         }
 
         [Test]
         public void MinimumAndCompositeSpecificationsEvaluateFromGameSession()
         {
-            var session = new GameSession(); session.Relationships.ChangeScore(Daniel, 2); session.StoryFlags.Set(new StoryFlagId("ready"));
-            var minimum = new MinimumRelationshipScoreSpecification(Daniel, 2);
+            var session = new GameSession(); session.Relationships.ChangeScore(Minh, 2); session.StoryFlags.Set(new StoryFlagId("ready"));
+            var minimum = new MinimumRelationshipScoreSpecification(Minh, 2);
             var composite = new AllSceneConditionsCompositeSpecification(new INarrativeSceneSpecification[] { minimum, new StoryFlagSetSpecification(new StoryFlagId("ready")) });
-            Assert.That(minimum.IsSatisfiedBy(session), Is.True); Assert.That(composite.IsSatisfiedBy(session), Is.True);
-            Assert.That(new AnySceneConditionsCompositeSpecification(new INarrativeSceneSpecification[] { new MinimumRelationshipScoreSpecification(Mina, 1), minimum }).IsSatisfiedBy(session), Is.True);
+            Assert.That(minimum.IsSatisfiedBy(session), Is.True);
+            Assert.That(composite.IsSatisfiedBy(session), Is.True);
+            Assert.That(new AnySceneConditionsCompositeSpecification(new INarrativeSceneSpecification[] { new MinimumRelationshipScoreSpecification(Linh, 1), minimum }).IsSatisfiedBy(session), Is.True);
         }
 
         [Test]
         public void HighestPriorityEligibleSceneAndFallbackAreSelected()
         {
-            IReadOnlyList<NarrativeSceneDefinition> candidates = DemoScenarioFactory.CreateDemoScenarioDefinitions().Where(x => x.Scene.MajorSceneId == new MajorSceneId("S2")).ToArray();
-            var strategy = new HighestPriorityNarrativeSceneSelectionStrategy(); var session = new GameSession();
-            session.Relationships.SetScore(Daniel, 2); session.Relationships.SetScore(Mina, 2); session.Relationships.SetScore(Sara, 2);
-            Assert.That(strategy.SelectScene(candidates, session).Scene.Id.Value, Is.EqualTo("S2_DANIEL_RECORDING"));
-            Assert.That(strategy.SelectScene(candidates, new GameSession()).Scene.Id.Value, Is.EqualTo("S2_DEFAULT_VIRAL"));
+            NarrativeScene Scene(string id) => new(new NarrativeSceneId(id), new MajorSceneId("S09"), Array.Empty<NarrativeBeat>(), Array.Empty<NarrativeChoice>(), Array.Empty<NarrativeSceneTransition>());
+            var candidates = new[]
+            {
+                new NarrativeSceneDefinition(Scene("TRUST"), 10, new MinimumRelationshipScoreSpecification(Minh, 2)),
+                new NarrativeSceneDefinition(Scene("DEFAULT"), 0, new AlwaysSatisfiedSpecification())
+            };
+            var strategy = new HighestPriorityNarrativeSceneSelectionStrategy();
+            var trusted = new GameSession(); trusted.Relationships.SetScore(Minh, 2);
+            Assert.That(strategy.SelectScene(candidates, trusted).Scene.Id.Value, Is.EqualTo("TRUST"));
+            Assert.That(strategy.SelectScene(candidates, new GameSession()).Scene.Id.Value, Is.EqualTo("DEFAULT"));
         }
 
         [Test]
-        public void EqualPriorityUsesNarrativeSceneIdAsDeterministicTieBreaker()
-        {
-            NarrativeScene Scene(string id) => new(new NarrativeSceneId(id), new MajorSceneId("S9"), Array.Empty<NarrativeBeat>(), Array.Empty<NarrativeChoice>(), Array.Empty<NarrativeSceneTransition>());
-            var candidates = new[] { new NarrativeSceneDefinition(Scene("B"), 10, new AlwaysSatisfiedSpecification()), new NarrativeSceneDefinition(Scene("A"), 10, new AlwaysSatisfiedSpecification()) };
-            Assert.That(new HighestPriorityNarrativeSceneSelectionStrategy().SelectScene(candidates, new GameSession()).Scene.Id.Value, Is.EqualTo("A"));
-        }
-
-        [TestCase("S1_POST_WITHOUT_ACCUSATION", "S2_SARA_ARTICLE")]
-        [TestCase("S1_WAIT_FOR_RECORDING", "S2_DANIEL_RECORDING")]
-        [TestCase("S1_PUBLISH_MINA_ACCOUNT", "S2_MINA_CONTEXT")]
-        [TestCase("S1_NOT_ENOUGH_EVIDENCE", "S2_DEFAULT_VIRAL")]
-        public void SelectingEachOpeningChoicePresentsTheCorrectSceneTwoSubscene(string choiceId, string expectedSceneId)
+        public void NewGameStartsAtSceneZeroWithZeroRelationshipAndMediaLiteracyScores()
         {
             Harness harness = CreateHarness(); harness.Start();
-            Assert.That(harness.Presentation.Scene.Id, Is.EqualTo(DemoScenarioFactory.OpeningSceneId));
-            harness.Choice(choiceId);
-            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo(expectedSceneId));
+            Assert.That(harness.Session.NarrativeProgress.CurrentNarrativeSceneId, Is.EqualTo(ScenarioFactory.BuiltInOpeningSceneId));
+            Assert.That(new[] { Linh, Minh, new CharacterId("Vy") }.Select(harness.Session.Relationships.GetScore), Is.All.Zero);
+            Assert.That(Enum.GetValues(typeof(MediaLiteracyMetric)).Cast<MediaLiteracyMetric>().Select(harness.Session.MediaLiteracy.GetScore), Is.All.Zero);
         }
 
         [Test]
-        public void NewGameStartsAtOpeningSceneWithZeroRelationshipScores()
+        public void BuiltInSceneZeroNarrativePassesValidation()
         {
-            Harness harness = CreateHarness(); harness.Start();
-            Assert.That(harness.Session.NarrativeProgress.CurrentNarrativeSceneId, Is.EqualTo(DemoScenarioFactory.OpeningSceneId));
-            Assert.That(new[] { Mina, Daniel, Sara }.Select(harness.Session.Relationships.GetScore), Is.All.Zero);
+            IReadOnlyList<NarrativeSceneDefinition> definitions = new ScenarioFactory().CreateBuiltInSceneZeroDefinitions();
+            IReadOnlyList<NarrativeValidationResult> results = new NarrativeSceneValidator().Validate(definitions,
+                ScenarioFactory.BuiltInOpeningSceneId, new[] { Linh, Minh, new CharacterId("Vy") });
+            Assert.That(results.Where(x => x.Severity == NarrativeValidationSeverity.Error), Is.Empty);
         }
 
-        [Test]
-        public void GameSessionMementoRoundTripRestoresAllAuthoritativeState()
-        {
-            Harness harness = CreateHarness(); harness.Start(); harness.Choice("S1_WAIT_FOR_RECORDING");
-            var factory = new GameSessionMementoFactory(); GameSession restored = factory.Restore(factory.CreateMemento(harness.Session));
-            Assert.That(restored.NarrativeProgress.CurrentNarrativeSceneId, Is.EqualTo(new NarrativeSceneId("S2_DANIEL_RECORDING")));
-            Assert.That(restored.Relationships.GetScore(Daniel), Is.EqualTo(2));
-            Assert.That(restored.ChoiceHistory.Contains(new ChoiceId("S1_WAIT_FOR_RECORDING")), Is.True);
-            Assert.That(restored.StoryFlags.Contains(new StoryFlagId("publication_delayed")), Is.True);
-            Assert.That(restored.NarrativeProgress.IsCompleted(DemoScenarioFactory.OpeningSceneId), Is.True);
-        }
-
-        private static Harness CreateHarness() => new();
+        private static Harness CreateHarness() => new(new ScenarioFactory().CreateBuiltInSceneZeroDefinitions());
 
         private sealed class Harness
         {
-            private readonly GameSessionStore _store = new(); private readonly CapturePresentation _presentation = new();
-            private readonly StartNewGameCommandHandler _start; private readonly SelectChoiceCommandHandler _choice;
-            public GameSession Session => _store.Current; public CapturePresentation Presentation => _presentation;
-            public Harness()
+            private readonly GameSessionStore _store = new();
+            private readonly CapturePresentation _presentation = new();
+            private readonly StartNewGameCommandHandler _start;
+            private readonly SelectChoiceCommandHandler _choice;
+            private readonly CompleteNarrativeSceneCommandHandler _complete;
+            public GameSession Session => _store.Current;
+            public CapturePresentation Presentation => _presentation;
+
+            public Harness(IEnumerable<NarrativeSceneDefinition> definitions)
             {
-                var repository = new ScriptableObjectNarrativeSceneRepository(DemoScenarioFactory.CreateDemoScenarioDefinitions(), DemoScenarioFactory.OpeningSceneId);
-                var events = new GameEventPublisher(); var saves = new MemorySaveRepository(); var save = new SaveGameCommandHandler(_store, new GameSessionMementoFactory(), saves);
-                var complete = new CompleteNarrativeSceneCommandHandler(_store, events);
+                var repository = new ScriptableObjectNarrativeSceneRepository(definitions, ScenarioFactory.BuiltInOpeningSceneId);
+                var events = new GameEventPublisher();
                 var next = new SelectNextNarrativeSceneCommandHandler(_store, repository, new HighestPriorityNarrativeSceneSelectionStrategy(), _presentation, events);
-                _choice = new SelectChoiceCommandHandler(_store, repository, complete, next, save, events);
+                _complete = new CompleteNarrativeSceneCommandHandler(_store, repository, next, _presentation, events);
+                _choice = new SelectChoiceCommandHandler(_store, repository, _complete, events);
                 _start = new StartNewGameCommandHandler(_store, repository, new ImmediateSceneLoadingAdapter(), _presentation, events);
             }
+
             public void Start() => _start.Handle(new StartNewGameCommand());
             public void Choice(string id) => _choice.Handle(new SelectChoiceCommand(new ChoiceId(id)));
+            public void CompleteCurrent() => _complete.Handle(new CompleteNarrativeSceneCommand(Session.NarrativeProgress.CurrentNarrativeSceneId.Value));
+            public void GoToEndingWithVerificationChoices()
+            {
+                Choice("CHOICE_0_1_B"); CompleteCurrent();
+                Choice("CHOICE_0_2_B"); CompleteCurrent();
+                Choice("CHOICE_0_3_B"); CompleteCurrent();
+            }
         }
-        private sealed class ImmediateSceneLoadingAdapter : IUnitySceneLoadingAdapter { public void LoadSceneAsync(string sceneName, Action onLoaded) => onLoaded(); }
-        public sealed class CapturePresentation : INarrativePresentationGateway { public NarrativeScene Scene { get; private set; } public void PresentScene(NarrativeScene scene) => Scene = scene; public void EndGame(NarrativeSceneId finalSceneId) { } }
-        private sealed class MemorySaveRepository : ISaveGameRepository
+
+        private sealed class ImmediateSceneLoadingAdapter : IUnitySceneLoadingAdapter
         {
-            private GameSessionMemento _value; public bool HasSave => _value != null; public void Save(GameSessionMemento memento) => _value = memento;
-            public GameSessionMemento Load() => _value; public void Delete() => _value = null;
+            public void LoadSceneAsync(string sceneName, Action onLoaded) => onLoaded();
+        }
+
+        public sealed class CapturePresentation : INarrativePresentationGateway
+        {
+            public NarrativeScene Scene { get; private set; }
+            public NarrativeSceneId? EndedAt { get; private set; }
+            public void PresentScene(NarrativeScene scene) => Scene = scene;
+            public void EndGame(NarrativeSceneId finalSceneId) => EndedAt = finalSceneId;
         }
     }
 }

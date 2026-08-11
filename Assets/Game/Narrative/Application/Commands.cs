@@ -11,7 +11,9 @@ namespace Bedrot.Narrative.Application
     public readonly struct CompleteNarrativeSceneCommand
     {
         public NarrativeSceneId SceneId { get; }
-        public CompleteNarrativeSceneCommand(NarrativeSceneId sceneId) => SceneId = sceneId;
+        public NarrativeSceneId? DirectDestinationSceneId { get; }
+        public CompleteNarrativeSceneCommand(NarrativeSceneId sceneId, NarrativeSceneId? directDestinationSceneId = null)
+        { SceneId = sceneId; DirectDestinationSceneId = directDestinationSceneId; }
     }
     public readonly struct SelectNextNarrativeSceneCommand
     {
@@ -20,7 +22,5 @@ namespace Bedrot.Narrative.Application
         public SelectNextNarrativeSceneCommand(MajorSceneId majorSceneId, NarrativeSceneId? directDestinationSceneId = null)
         { MajorSceneId = majorSceneId; DirectDestinationSceneId = directDestinationSceneId; }
     }
-    public readonly struct SaveGameCommand { }
-    public readonly struct LoadGameCommand { }
     public readonly struct RestartGameCommand { }
 }

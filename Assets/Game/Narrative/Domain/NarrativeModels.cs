@@ -4,13 +4,21 @@ using Bedrot.Shared;
 
 namespace Bedrot.Narrative.Domain
 {
+    public enum CharacterSpriteSlot
+    {
+        Auto,
+        Left,
+        Right
+    }
+
     public sealed record NarrativeBeat(
         CharacterId? SpeakerId,
         string Text,
         string CharacterSpriteCue = null,
         string BackgroundCue = null,
         string AnimationCue = null,
-        string AudioCue = null);
+        string AudioCue = null,
+        CharacterSpriteSlot SpriteSlot = CharacterSpriteSlot.Auto);
 
     public sealed record NarrativeChoice(
         ChoiceId Id,
@@ -42,6 +50,11 @@ namespace Bedrot.Narrative.Domain
     public sealed record RelationshipScoreChoiceEffect(CharacterId CharacterId, int Amount) : IChoiceEffect
     {
         public void Apply(GameSession gameSession) => gameSession.Relationships.ChangeScore(CharacterId, Amount);
+    }
+
+    public sealed record MediaLiteracyScoreChoiceEffect(MediaLiteracyMetric Metric, int Amount) : IChoiceEffect
+    {
+        public void Apply(GameSession gameSession) => gameSession.MediaLiteracy.ChangeScore(Metric, Amount);
     }
 
     public sealed record SetStoryFlagChoiceEffect(StoryFlagId StoryFlagId) : IChoiceEffect

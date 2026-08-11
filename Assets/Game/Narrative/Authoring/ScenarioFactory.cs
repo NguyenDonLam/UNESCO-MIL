@@ -8,6 +8,10 @@ namespace Bedrot.Narrative.Authoring
 {
     public sealed class ScenarioFactory
     {
+        public static NarrativeSceneId BuiltInOpeningSceneId => SceneZeroScenarioFactory.OpeningSceneId;
+        public IReadOnlyList<NarrativeSceneDefinition> CreateBuiltInSceneZeroDefinitions() =>
+            SceneZeroScenarioFactory.CreateSceneDefinitions();
+
         public NarrativeScene CreateScenario(NarrativeSceneAsset asset)
         {
             if (asset == null) throw new ArgumentNullException(nameof(asset));
@@ -16,7 +20,7 @@ namespace Bedrot.Narrative.Authoring
 
             NarrativeBeat[] beats = asset.Beats.Select(x => new NarrativeBeat(
                 OptionalCharacterId(x.SpeakerId), x.Text ?? string.Empty, EmptyToNull(x.CharacterSpriteCue),
-                EmptyToNull(x.BackgroundCue), EmptyToNull(x.AnimationCue), EmptyToNull(x.AudioCue))).ToArray();
+                EmptyToNull(x.BackgroundCue), EmptyToNull(x.AnimationCue), EmptyToNull(x.AudioCue), x.SpriteSlot)).ToArray();
             NarrativeChoice[] choices = asset.Choices.Select(x => CreateChoice(asset.SceneId, x)).ToArray();
             NarrativeSceneTransition[] transitions = asset.Transitions.Select(x => new NarrativeSceneTransition(
                 OptionalMajorSceneId(x.DestinationMajorSceneId), OptionalSceneId(x.DirectDestinationSceneId))).ToArray();
@@ -39,15 +43,14 @@ namespace Bedrot.Narrative.Authoring
             effects.AddRange(data.StoryFlagEffects.Select(x => x.Remove
                 ? (IChoiceEffect)new RemoveStoryFlagChoiceEffect(new StoryFlagId(x.StoryFlagId))
                 : new SetStoryFlagChoiceEffect(new StoryFlagId(x.StoryFlagId))));
+            effects.AddRange(data.MediaLiteracyEffects.Select(x => new MediaLiteracyScoreChoiceEffect(x.Metric, x.Amount)));
             ChoiceId id = new(data.ChoiceId);
-            effects.Add(new RecordChoiceChoiceEffect(id));
-            effects.Add(new CompleteNarrativeSceneChoiceEffect(new NarrativeSceneId(sceneId)));
             return new NarrativeChoice(id, data.Text ?? string.Empty, effects, OptionalSceneId(data.DirectDestinationSceneId));
         }
 
         private static string EmptyToNull(string value) => string.IsNullOrWhiteSpace(value) ? null : value;
-        private static CharacterId? OptionalCharacterId(string value) => string.IsNullOrWhiteSpace(value) ? null : new CharacterId(value);
-        private static NarrativeSceneId? OptionalSceneId(string value) => string.IsNullOrWhiteSpace(value) ? null : new NarrativeSceneId(value);
-        private static MajorSceneId? OptionalMajorSceneId(string value) => string.IsNullOrWhiteSpace(value) ? null : new MajorSceneId(value);
+        private static CharacterId? OptionalCharacterId(string value) => string.IsNullOrWhiteSpace(value) ? (CharacterId?)null : new CharacterId(value);
+        private static NarrativeSceneId? OptionalSceneId(string value) => string.IsNullOrWhiteSpace(value) ? (NarrativeSceneId?)null : new NarrativeSceneId(value);
+        private static MajorSceneId? OptionalMajorSceneId(string value) => string.IsNullOrWhiteSpace(value) ? (MajorSceneId?)null : new MajorSceneId(value);
     }
 }

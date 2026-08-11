@@ -6,8 +6,10 @@ namespace Bedrot.Narrative.Presentation
 {
     public sealed class CharacterSpritePresenter : MonoBehaviour
     {
+        [Tooltip("Character-agnostic display slot used by beats assigned to the left side.")]
         [FormerlySerializedAs("adapter")]
         [SerializeField] private UnityCharacterSpriteAdapter leftAdapter;
+        [Tooltip("Character-agnostic display slot used by beats assigned to the right side.")]
         [SerializeField] private UnityCharacterSpriteAdapter rightAdapter;
         private string _leftSpeakerId;
         private string _rightSpeakerId;

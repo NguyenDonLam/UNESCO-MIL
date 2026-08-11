@@ -179,8 +179,8 @@ Recommended assets:
 The first playable version should include:
 
 - a main menu;
-- one complete opening scene;
-- one difficult multiple-choice decision;
+- one complete opening scene with shared merge nodes;
+- three difficult multiple-choice decisions;
 - relationship score updates;
 - at least two possible Scene 2 subscenes;
 - one fallback Scene 2 subscene;
@@ -188,7 +188,7 @@ The first playable version should include:
 - background presentation;
 - dialogue textbox;
 - basic scene transitions;
-- local save and restart support.
+- restart support.
 
 The initial version does not require:
 
@@ -209,7 +209,6 @@ The initial version does not require:
 - C#
 - ScriptableObjects for narrative authoring
 - PNG character sprites and backgrounds
-- Local JSON save data
 
 ## Project Goal
 

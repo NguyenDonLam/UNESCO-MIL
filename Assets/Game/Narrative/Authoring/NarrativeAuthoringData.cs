@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Bedrot.Narrative.Domain;
 using UnityEngine;
 
 namespace Bedrot.Narrative.Authoring
@@ -10,6 +11,7 @@ namespace Bedrot.Narrative.Authoring
         public string SpeakerId;
         [TextArea(2, 6)] public string Text;
         public string CharacterSpriteCue;
+        public CharacterSpriteSlot SpriteSlot = CharacterSpriteSlot.Auto;
         public string BackgroundCue;
         public string AnimationCue;
         public string AudioCue;
@@ -30,12 +32,20 @@ namespace Bedrot.Narrative.Authoring
     }
 
     [Serializable]
+    public sealed class MediaLiteracyChoiceEffectData
+    {
+        public Bedrot.Narrative.Domain.MediaLiteracyMetric Metric;
+        public int Amount;
+    }
+
+    [Serializable]
     public sealed class NarrativeChoiceData
     {
         public string ChoiceId;
         [TextArea(2, 4)] public string Text;
         public List<RelationshipChoiceEffectData> RelationshipEffects = new();
         public List<StoryFlagChoiceEffectData> StoryFlagEffects = new();
+        public List<MediaLiteracyChoiceEffectData> MediaLiteracyEffects = new();
         public string DirectDestinationSceneId;
     }
 
