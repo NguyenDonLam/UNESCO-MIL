@@ -11,6 +11,10 @@ namespace Bedrot.Narrative.Presentation
     {
         [SerializeField] private Text speakerNameText;
         [SerializeField] private Text dialogueText;
+        [SerializeField] private AudioSource bleepAudioSource;
+        [SerializeField] private DialogueBleepCatalogueAsset bleepCatalogue;
+        [Range(0f, 1f)]
+        [SerializeField] private float bleepVolume = 0.35f;
         [Min(1f)]
         [SerializeField] private float charactersPerSecond = 45f;
         private Coroutine _revealCoroutine;
@@ -18,6 +22,16 @@ namespace Bedrot.Narrative.Presentation
         private Action _advanceRequested;
 
         public bool IsRevealing { get; private set; }
+
+        private void Awake()
+        {
+            if (bleepAudioSource == null) bleepAudioSource = GetComponent<AudioSource>();
+            if (bleepAudioSource == null) bleepAudioSource = gameObject.AddComponent<AudioSource>();
+            bleepAudioSource.playOnAwake = false;
+            bleepAudioSource.loop = true;
+            bleepAudioSource.spatialBlend = 0f;
+            bleepAudioSource.volume = bleepVolume;
+        }
 
         public void BindAdvanceRequest(Action advanceRequested) => _advanceRequested = advanceRequested;
 
@@ -40,6 +54,7 @@ namespace Bedrot.Narrative.Presentation
 
             dialogueText.text = string.Empty;
             IsRevealing = true;
+            StartBleep(beat);
             _revealCoroutine = StartCoroutine(RevealText());
         }
 
@@ -80,6 +95,7 @@ namespace Bedrot.Narrative.Presentation
             dialogueText.text = _fullText;
             IsRevealing = false;
             _revealCoroutine = null;
+            StopBleep();
         }
 
         private void StopReveal()
@@ -87,6 +103,23 @@ namespace Bedrot.Narrative.Presentation
             if (_revealCoroutine != null) StopCoroutine(_revealCoroutine);
             _revealCoroutine = null;
             IsRevealing = false;
+            StopBleep();
+        }
+
+        private void StartBleep(NarrativeBeat beat)
+        {
+            StopBleep();
+            AudioClip clip = bleepCatalogue?.GetClip(beat.SpeakerId);
+            if (bleepAudioSource == null || clip == null) return;
+            bleepAudioSource.clip = clip;
+            bleepAudioSource.Play();
+        }
+
+        private void StopBleep()
+        {
+            if (bleepAudioSource == null) return;
+            bleepAudioSource.Stop();
+            bleepAudioSource.clip = null;
         }
 
         private void OnDisable() => StopReveal();

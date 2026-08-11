@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f76e53749cbe4dbcbfce78ff9ccdbce2, type: 3}
+  m_Name: DialogueBleepCatalogue
+  m_EditorClassIdentifier: Bedrot.Runtime::Bedrot.Narrative.Presentation.DialogueBleepCatalogueAsset
+  narratorClip: {fileID: 8300000, guid: 9292cfabeab33f942bbfaba72feacd73, type: 3}
+  characterEntries:
+  - SpeakerId: Linh
+    Clip: {fileID: 8300000, guid: 215cfe69949623d4ab0a400acfc80939, type: 3}
+  - SpeakerId: Minh
+    Clip: {fileID: 8300000, guid: 394ef0e17f69e2c42b1ca8c9ee1f6c79, type: 3}
+  - SpeakerId: Vy
+    Clip: {fileID: 8300000, guid: e4d58f125be7e6f40980f58fa129521e, type: 3}
+  - SpeakerId: Cô Hương
+    Clip: {fileID: 8300000, guid: 9d49f58be3a0cf64bb957169daf5e660, type: 3}

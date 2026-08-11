@@ -1244,6 +1244,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Bedrot.Runtime::Bedrot.Narrative.Presentation.DialoguePresenter
   speakerNameText: {fileID: 2137250839}
   dialogueText: {fileID: 1976424293}
+  bleepAudioSource: {fileID: 0}
+  bleepCatalogue: {fileID: 11400000, guid: b8ea2bd69ce74efabb644c5f97171fc8, type: 2}
+  bleepVolume: 0.35
 --- !u!114 &1675420936
 MonoBehaviour:
   m_ObjectHideFlags: 0

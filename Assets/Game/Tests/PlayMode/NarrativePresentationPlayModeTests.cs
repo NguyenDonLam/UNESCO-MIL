@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
+using System.Collections.Generic;
 
 namespace Bedrot.Tests.PlayMode
 {
@@ -94,6 +95,49 @@ namespace Bedrot.Tests.PlayMode
             Assert.That(dialogue.IsRevealing, Is.True);
 
             UnityEngine.Object.Destroy(presenter.transform.root.gameObject);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator DialogueBleepUsesSpeakerSignatureAndStopsWhenRevealCompletes()
+        {
+            var root = new GameObject("DialogueBleepTest", typeof(RectTransform));
+            DialoguePresenter dialogue = root.AddComponent<DialoguePresenter>();
+            var textObject = new GameObject("DialogueText", typeof(RectTransform), typeof(Text));
+            textObject.transform.SetParent(root.transform);
+            SetField(dialogue, "dialogueText", textObject.GetComponent<Text>());
+            SetField(dialogue, "charactersPerSecond", 1f);
+
+            AudioClip narratorClip = AudioClip.Create("NarratorBleep", 4410, 1, 44100, false);
+            AudioClip linhClip = AudioClip.Create("LinhBleep", 4410, 1, 44100, false);
+            DialogueBleepCatalogueAsset catalogue = ScriptableObject.CreateInstance<DialogueBleepCatalogueAsset>();
+            SetField(catalogue, "narratorClip", narratorClip);
+            SetField(catalogue, "characterEntries", new List<DialogueBleepCueEntry>
+            {
+                new() { SpeakerId = "Linh", Clip = linhClip }
+            });
+            SetField(dialogue, "bleepCatalogue", catalogue);
+
+            dialogue.PresentBeat(new NarrativeBeat(new CharacterId("Linh"), "A deliberately long line."));
+            yield return null;
+
+            AudioSource audioSource = GetField<AudioSource>(dialogue, "bleepAudioSource");
+            Assert.That(audioSource.clip, Is.SameAs(linhClip));
+            Assert.That(audioSource.loop, Is.True);
+            Assert.That(audioSource.isPlaying, Is.True);
+
+            Assert.That(dialogue.CompleteRevealImmediately(), Is.True);
+            Assert.That(audioSource.isPlaying, Is.False);
+            Assert.That(audioSource.clip, Is.Null);
+
+            dialogue.PresentBeat(new NarrativeBeat(null, "Narrated text."));
+            yield return null;
+            Assert.That(audioSource.clip, Is.SameAs(narratorClip));
+
+            UnityEngine.Object.Destroy(root);
+            UnityEngine.Object.Destroy(catalogue);
+            UnityEngine.Object.Destroy(linhClip);
+            UnityEngine.Object.Destroy(narratorClip);
             yield return null;
         }
 
