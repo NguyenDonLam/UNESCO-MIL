@@ -126,7 +126,7 @@ namespace Bedrot.Narrative.Authoring
                 Narration("Minh bạch không có nghĩa là công bố mọi thông tin đang có. Một phản hồi có trách nhiệm sử dụng lượng thông tin tối thiểu cần thiết để trả lời vấn đề công chúng có quyền quan tâm."),
                 Narration("Câu hỏi cần nhớ: Mình có thể giải quyết vấn đề mà không phơi bày con người không?")
             };
-            return Scene("S01_END", beats, new NarrativeChoice[0]);
+            return Scene("S01_END", beats, new NarrativeChoice[0], new NarrativeSceneTransition(new MajorSceneId("S02")));
         }
 
         private static NarrativeScene Response(string id, string speaker, string dialogue, string spriteCue, string consequence, string destination)

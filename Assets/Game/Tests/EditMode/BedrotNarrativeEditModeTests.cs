@@ -109,6 +109,32 @@ namespace Bedrot.Tests.EditMode
         }
 
         [Test]
+        public void BuiltInSceneTwoRunsThroughItsSharedMergeNodesAndResolvesEveryFinalBranch()
+        {
+            Harness harness = new(new ScenarioFactory().CreateBuiltInNarrativeDefinitions());
+            harness.Start();
+            harness.GoToEndingWithVerificationChoices();
+            harness.CompleteCurrent();
+            harness.Choice("CHOICE_1_1_B"); harness.CompleteCurrent();
+            harness.Choice("CHOICE_1_2_B"); harness.CompleteCurrent();
+            harness.Choice("CHOICE_1_3_B"); harness.CompleteCurrent();
+            harness.CompleteCurrent();
+
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S02_THE_SECRET_DOCUMENT"));
+            int minhScoreBeforeSceneTwo = harness.Session.Relationships.GetScore(Minh);
+
+            harness.Choice("CHOICE_2_1_B"); harness.CompleteCurrent();
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S02_MERGE_01"));
+            harness.Choice("CHOICE_2_2_B"); harness.CompleteCurrent();
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S02_MERGE_02"));
+            harness.Choice("CHOICE_2_3_B"); harness.CompleteCurrent();
+
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S02_END"));
+            Assert.That(harness.Session.Relationships.GetScore(Minh) - minhScoreBeforeSceneTwo, Is.EqualTo(5));
+            Assert.That(harness.Session.StoryFlags.Contains(new StoryFlagId("s02_responsible_financial_disclosure")), Is.True);
+        }
+
+        [Test]
         public void MinimumAndCompositeSpecificationsEvaluateFromGameSession()
         {
             var session = new GameSession(); session.Relationships.ChangeScore(Minh, 2); session.StoryFlags.Set(new StoryFlagId("ready"));

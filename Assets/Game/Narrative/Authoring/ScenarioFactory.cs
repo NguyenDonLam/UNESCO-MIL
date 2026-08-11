@@ -17,6 +17,7 @@ namespace Bedrot.Narrative.Authoring
             var definitions = new List<NarrativeSceneDefinition>();
             definitions.AddRange(SceneZeroScenarioFactory.CreateSceneDefinitions());
             definitions.AddRange(SceneOneScenarioFactory.CreateSceneDefinitions());
+            definitions.AddRange(SceneTwoScenarioFactory.CreateSceneDefinitions());
             return definitions;
         }
 
