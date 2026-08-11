@@ -60,7 +60,7 @@ namespace Bedrot.Bootstrap
             if (useBuiltInSceneZeroContent)
             {
                 var factory = new ScenarioFactory();
-                var definitions = new List<NarrativeSceneDefinition>(factory.CreateBuiltInSceneZeroDefinitions());
+                var definitions = new List<NarrativeSceneDefinition>(factory.CreateBuiltInNarrativeDefinitions());
                 foreach (NarrativeSceneCandidateAsset candidate in narrativeCandidates)
                     definitions.Add(factory.CreateScenarioDefinition(candidate));
                 return new ScriptableObjectNarrativeSceneRepository(definitions, ScenarioFactory.BuiltInOpeningSceneId);

@@ -12,6 +12,14 @@ namespace Bedrot.Narrative.Authoring
         public IReadOnlyList<NarrativeSceneDefinition> CreateBuiltInSceneZeroDefinitions() =>
             SceneZeroScenarioFactory.CreateSceneDefinitions();
 
+        public IReadOnlyList<NarrativeSceneDefinition> CreateBuiltInNarrativeDefinitions()
+        {
+            var definitions = new List<NarrativeSceneDefinition>();
+            definitions.AddRange(SceneZeroScenarioFactory.CreateSceneDefinitions());
+            definitions.AddRange(SceneOneScenarioFactory.CreateSceneDefinitions());
+            return definitions;
+        }
+
         public NarrativeScene CreateScenario(NarrativeSceneAsset asset)
         {
             if (asset == null) throw new ArgumentNullException(nameof(asset));

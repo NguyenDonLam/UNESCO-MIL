@@ -37,3 +37,23 @@ MonoBehaviour:
     Sprite: {fileID: 0}
     AnimationController: {fileID: 9100000, guid: 8ba8693d0fd04a79a6afb400b4a56a03, type: 2}
     AnimationStateName: 
+  - Cue: vy.uncomfortable
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: 8ba8693d0fd04a79a6afb400b4a56a03, type: 2}
+    AnimationStateName:
+  - Cue: vy.firm
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: de6440780d314dd9aaca12532401105b, type: 2}
+    AnimationStateName:
+  - Cue: huong.tense
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: 061e9700efe24e20993c74b3a576abd7, type: 2}
+    AnimationStateName:
+  - Cue: huong.concerned
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: d804605882694fd29757ecbd04f5a909, type: 2}
+    AnimationStateName:
+  - Cue: huong.relieved
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: f217d1c5655741f2ac1a19bc047c873f, type: 2}
+    AnimationStateName:

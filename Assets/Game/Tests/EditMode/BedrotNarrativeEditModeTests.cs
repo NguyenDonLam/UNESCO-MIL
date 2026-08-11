@@ -14,6 +14,7 @@ namespace Bedrot.Tests.EditMode
     {
         private static readonly CharacterId Linh = new("Linh");
         private static readonly CharacterId Minh = new("Minh");
+        private static readonly CharacterId Vy = new("Vy");
 
         [Test]
         public void RelationshipScoreChangesSupportPositiveAndNegativeValues()
@@ -86,6 +87,28 @@ namespace Bedrot.Tests.EditMode
         }
 
         [Test]
+        public void BuiltInSceneOneRunsThroughItsSharedMergeNodesAndAppliesAuthoredEffects()
+        {
+            Harness harness = new(new ScenarioFactory().CreateBuiltInNarrativeDefinitions());
+            harness.Start();
+            harness.GoToEndingWithVerificationChoices();
+            harness.CompleteCurrent();
+
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S01_THE_LEAKED_IMAGE"));
+
+            harness.Choice("CHOICE_1_1_B"); harness.CompleteCurrent();
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S01_MERGE_01"));
+            harness.Choice("CHOICE_1_2_B"); harness.CompleteCurrent();
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S01_MERGE_02"));
+            harness.Choice("CHOICE_1_3_B"); harness.CompleteCurrent();
+
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S01_END"));
+            Assert.That(harness.Session.Relationships.GetScore(Vy), Is.EqualTo(4));
+            Assert.That(harness.Session.MediaLiteracy.GetScore(MediaLiteracyMetric.Privacy), Is.EqualTo(4));
+            Assert.That(harness.Session.StoryFlags.Contains(new StoryFlagId("s01_minimum_necessary_evidence_published")), Is.True);
+        }
+
+        [Test]
         public void MinimumAndCompositeSpecificationsEvaluateFromGameSession()
         {
             var session = new GameSession(); session.Relationships.ChangeScore(Minh, 2); session.StoryFlags.Set(new StoryFlagId("ready"));
@@ -126,6 +149,15 @@ namespace Bedrot.Tests.EditMode
             IReadOnlyList<NarrativeSceneDefinition> definitions = new ScenarioFactory().CreateBuiltInSceneZeroDefinitions();
             IReadOnlyList<NarrativeValidationResult> results = new NarrativeSceneValidator().Validate(definitions,
                 ScenarioFactory.BuiltInOpeningSceneId, new[] { Linh, Minh, new CharacterId("Vy") });
+            Assert.That(results.Where(x => x.Severity == NarrativeValidationSeverity.Error), Is.Empty);
+        }
+
+        [Test]
+        public void BuiltInSceneZeroAndOneNarrativePassesValidation()
+        {
+            IReadOnlyList<NarrativeSceneDefinition> definitions = new ScenarioFactory().CreateBuiltInNarrativeDefinitions();
+            IReadOnlyList<NarrativeValidationResult> results = new NarrativeSceneValidator().Validate(definitions,
+                ScenarioFactory.BuiltInOpeningSceneId, new[] { Linh, Minh, Vy, new CharacterId("Cô Hương") });
             Assert.That(results.Where(x => x.Severity == NarrativeValidationSeverity.Error), Is.Empty);
         }
 
