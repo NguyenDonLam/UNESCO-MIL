@@ -279,15 +279,15 @@ RectTransform:
   m_GameObject: {fileID: 415475087}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.39014, y: 1, z: 1}
+  m_LocalScale: {x: 0.29035455, y: 0.94341993, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1945254889}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 1.00933, y: 3}
-  m_SizeDelta: {x: 229.1404, y: 65}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 304, y: 72}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &415475089
 MonoBehaviour:
@@ -316,15 +316,13 @@ MonoBehaviour:
     m_BestFit: 0
     m_MinSize: 0
     m_MaxSize: 50
-    m_Alignment: 0
+    m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'B
-
-'
+  m_Text: Aaaaaaaaaaaaaa
 --- !u!222 &415475090
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1084,15 +1082,15 @@ RectTransform:
   m_GameObject: {fileID: 1276969520}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.44013, y: 1, z: 1}
+  m_LocalScale: {x: 0.28620294, y: 0.8956721, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1722901075}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0.73194, y: -3}
-  m_SizeDelta: {x: 202.44653, y: 71.1036}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 304, y: 72}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1276969522
 MonoBehaviour:
@@ -1121,13 +1119,13 @@ MonoBehaviour:
     m_BestFit: 0
     m_MinSize: 0
     m_MaxSize: 50
-    m_Alignment: 0
+    m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: C
+  m_Text: Aaaaaaaaaaaaaaaaaaaaaaaaa
 --- !u!222 &1276969523
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1187,7 +1185,7 @@ MonoBehaviour:
   dialoguePresenter: {fileID: 1675420935}
   choicePresenter: {fileID: 2051853819}
   characterSpritePresenter: {fileID: 490820416}
-  backgroundPresenter: {fileID: 0}
+  backgroundPresenter: {fileID: 1964345027}
   transitionPresenter: {fileID: 0}
 --- !u!1 &1675420933
 GameObject:
@@ -1247,6 +1245,7 @@ MonoBehaviour:
   bleepAudioSource: {fileID: 0}
   bleepCatalogue: {fileID: 11400000, guid: b8ea2bd69ce74efabb644c5f97171fc8, type: 2}
   bleepVolume: 0.35
+  charactersPerSecond: 45
 --- !u!114 &1675420936
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1658,6 +1657,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1964345025}
   - component: {fileID: 1964345026}
+  - component: {fileID: 1964345028}
+  - component: {fileID: 1964345027}
   m_Layer: 0
   m_Name: Background
   m_TagString: Untagged
@@ -1675,7 +1676,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -960.01, y: -539.83, z: 0}
-  m_LocalScale: {x: 2.1837525, y: 2.1837525, z: 1.8350861}
+  m_LocalScale: {x: 1.063, y: 1.063, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1116224198}
@@ -1729,7 +1730,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 2882362982665381126, guid: 695d33a9a4b7824449e0112a8d9a9dc5, type: 3}
+  m_Sprite: {fileID: 1424471451424961677, guid: 6095698c564d70141b79429dccb4dc2d, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -1737,9 +1738,37 @@ SpriteRenderer:
   m_Size: {x: 6.2, y: 4.12}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!114 &1964345027
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1964345024}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f55df7b5848f416bb8c864cdbaac347b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Bedrot.Runtime::Bedrot.Narrative.Presentation.BackgroundPresenter
+  adapter: {fileID: 1964345028}
+--- !u!114 &1964345028
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1964345024}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0d74ad2bc93400f993d39398392f19f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Bedrot.Runtime::Bedrot.Narrative.Presentation.UnityBackgroundAdapter
+  targetImage: {fileID: 0}
+  targetSpriteRenderer: {fileID: 1964345026}
+  catalogue: {fileID: 11400000, guid: 34fc8df976bc3f342ac25d3f0eb21d75, type: 2}
 --- !u!1 &1976424291
 GameObject:
   m_ObjectHideFlags: 0
@@ -1856,7 +1885,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -108, y: 192}
+  m_AnchoredPosition: {x: -108, y: 205}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2051853819
@@ -1931,15 +1960,15 @@ RectTransform:
   m_GameObject: {fileID: 2099852531}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.39014, y: 1, z: 1}
+  m_LocalScale: {x: 0.2939315, y: 0.9873748, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1890533759}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0.86292, y: -9}
-  m_SizeDelta: {x: 223.1527, y: 80}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 304, y: 72}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2099852533
 MonoBehaviour:
@@ -1968,7 +1997,7 @@ MonoBehaviour:
     m_BestFit: 0
     m_MinSize: 0
     m_MaxSize: 50
-    m_Alignment: 0
+    m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 0

@@ -7,7 +7,7 @@ namespace Bedrot.Narrative.Authoring
     /// <summary>Provides the built-in Scene 1 leaked-image storyline.</summary>
     internal static class SceneOneScenarioFactory
     {
-        private const string CommunicationsRoomCue = "background.communications_room";
+        private const string CommunicationsRoomCue = "background.scene_1_privacy";
         private static readonly MajorSceneId SceneOneMajorId = new("S01");
 
         public static IReadOnlyList<NarrativeSceneDefinition> CreateSceneDefinitions() => new[]

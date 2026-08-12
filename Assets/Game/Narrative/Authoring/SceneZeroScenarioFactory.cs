@@ -7,7 +7,7 @@ namespace Bedrot.Narrative.Authoring
     /// <summary>Provides the built-in Scene 0 script until it is replaced by equivalent ScriptableObject assets.</summary>
     internal static class SceneZeroScenarioFactory
     {
-        private const string CommunicationsRoomCue = "background.communications_room";
+        private const string CommunicationsRoomCue = "background.scene_0_misinformation";
         private static readonly MajorSceneId SceneZeroMajorId = new("S00");
 
         public static NarrativeSceneId OpeningSceneId => new("S00_01");

@@ -189,6 +189,35 @@ namespace Bedrot.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator BackgroundAdapterChangesExistingSpriteRendererFromSemanticCue()
+        {
+            var root = new GameObject("BackgroundAdapterTest");
+            SpriteRenderer renderer = root.AddComponent<SpriteRenderer>();
+            UnityBackgroundAdapter adapter = root.AddComponent<UnityBackgroundAdapter>();
+            BackgroundCatalogueAsset catalogue = ScriptableObject.CreateInstance<BackgroundCatalogueAsset>();
+            Sprite sprite = Sprite.Create(new Texture2D(2, 2), new Rect(0, 0, 2, 2), Vector2.one * 0.5f);
+            SetField(catalogue, "entries", new List<SpriteCueEntry>
+            {
+                new() { Cue = "background.scene_test", Sprite = sprite }
+            });
+            SetField(adapter, "targetSpriteRenderer", renderer);
+            SetField(adapter, "catalogue", catalogue);
+
+            adapter.ShowBackground("background.scene_test");
+            Assert.That(renderer.enabled, Is.True);
+            Assert.That(renderer.sprite, Is.SameAs(sprite));
+
+            adapter.HideBackground();
+            Assert.That(renderer.enabled, Is.False);
+
+            UnityEngine.Object.Destroy(root);
+            UnityEngine.Object.Destroy(sprite.texture);
+            UnityEngine.Object.Destroy(sprite);
+            UnityEngine.Object.Destroy(catalogue);
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator CharacterSpritePresentersRouteBeatsToLeftAndRightCharacters()
         {
             var root = new GameObject("TwoCharacterSpriteTest");

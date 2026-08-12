@@ -7,7 +7,7 @@ namespace Bedrot.Narrative.Authoring
     /// <summary>Provides the built-in Scene 2 secret-document storyline.</summary>
     internal static class SceneTwoScenarioFactory
     {
-        private const string CommunicationsRoomCue = "background.communications_room";
+        private const string CommunicationsRoomCue = "background.scene_2_financial_leak";
         private static readonly MajorSceneId SceneTwoMajorId = new("S02");
 
         public static IReadOnlyList<NarrativeSceneDefinition> CreateSceneDefinitions() => new[]
