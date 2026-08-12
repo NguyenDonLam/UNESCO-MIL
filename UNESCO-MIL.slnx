@@ -1,5 +1,6 @@
 ﻿<Solution>
   <Project Path="Bedrot.Runtime.csproj" />
+  <Project Path="Bedrot.Editor.csproj" />
   <Project Path="Bedrot.PlayModeTests.csproj" />
   <Project Path="Bedrot.EditModeTests.csproj" />
 </Solution>
