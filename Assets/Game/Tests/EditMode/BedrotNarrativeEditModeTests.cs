@@ -5,6 +5,7 @@ using Bedrot.Narrative.Application;
 using Bedrot.Narrative.Authoring;
 using Bedrot.Narrative.Domain;
 using Bedrot.Narrative.Infrastructure;
+using Bedrot.Narrative.Presentation;
 using Bedrot.Shared;
 using NUnit.Framework;
 
@@ -200,8 +201,42 @@ namespace Bedrot.Tests.EditMode
         {
             Harness harness = CreateHarness(); harness.Start();
             Assert.That(harness.Session.NarrativeProgress.CurrentNarrativeSceneId, Is.EqualTo(ScenarioFactory.BuiltInOpeningSceneId));
-            Assert.That(new[] { Linh, Minh, new CharacterId("Vy") }.Select(harness.Session.Relationships.GetScore), Is.All.Zero);
+            Assert.That(new[] { Linh, Minh, Vy, new CharacterId("Cô Hương") }.Select(harness.Session.Relationships.GetScore), Is.All.Zero);
             Assert.That(Enum.GetValues(typeof(MediaLiteracyMetric)).Cast<MediaLiteracyMetric>().Select(harness.Session.MediaLiteracy.GetScore), Is.All.Zero);
+        }
+
+        [Test]
+        public void EndingResultsShowOnlyTheInsightsForTheHighestScores()
+        {
+            Harness harness = CreateHarness();
+            harness.Start();
+            harness.Session.Relationships.ChangeScore(Linh, 2);
+            harness.Session.Relationships.ChangeScore(Vy, -1);
+            harness.Session.MediaLiteracy.ChangeScore(MediaLiteracyMetric.Evidence, 3);
+
+            string results = GameEndingPresenter.BuildResultsText(harness.Session);
+
+            Assert.That(results, Does.Contain("Người kiểm chứng thông tin"));
+            Assert.That(results, Does.Contain("Xây dựng niềm tin với Linh"));
+            Assert.That(results, Does.Not.Contain("+3"));
+            Assert.That(results, Does.Not.Contain("+2"));
+            Assert.That(results, Does.Not.Contain("-1"));
+            Assert.That(results, Does.Not.Contain("Evidence):"));
+        }
+
+        [Test]
+        public void EndingResultsUseBalancedInsightsWhenHighestScoresAreTied()
+        {
+            Harness harness = CreateHarness();
+            harness.Start();
+
+            string results = GameEndingPresenter.BuildResultsText(harness.Session);
+
+            Assert.That(results, Does.Contain("Người ra quyết định cân bằng"));
+            Assert.That(results, Does.Contain("Nhận được sự tin tưởng của Cô Hương"));
+            Assert.That(results, Does.Contain("Xây dựng niềm tin với Linh"));
+            Assert.That(results, Does.Contain("Thuyết phục được Minh"));
+            Assert.That(results, Does.Contain("Tạo được sự đồng cảm với Vy"));
         }
 
         [Test]
@@ -280,7 +315,7 @@ namespace Bedrot.Tests.EditMode
             public NarrativeScene Scene { get; private set; }
             public NarrativeSceneId? EndedAt { get; private set; }
             public void PresentScene(NarrativeScene scene) => Scene = scene;
-            public void EndGame(NarrativeSceneId finalSceneId) => EndedAt = finalSceneId;
+            public void EndGame(NarrativeSceneId finalSceneId, GameSession gameSession) => EndedAt = finalSceneId;
         }
     }
 }

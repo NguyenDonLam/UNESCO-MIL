@@ -14,6 +14,8 @@ namespace Bedrot.Narrative.Presentation
         public RuntimeAnimatorController AnimationController;
         [Tooltip("Optional state to play. Leave empty to use the controller's default state.")]
         public string AnimationStateName;
+        [Tooltip("Mirror this appearance horizontally so characters share the authored facing direction.")]
+        public bool FlipHorizontal;
 
         public bool HasAppearance => Sprite != null || AnimationController != null;
         public bool IsAnimated => AnimationController != null;

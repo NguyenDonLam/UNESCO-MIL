@@ -22,12 +22,12 @@ namespace Bedrot.Narrative.Presentation
             ResolveActiveScenePresenter();
             _presenter.Bind(_selectChoice, _completeScene, _events); _presenter.PresentScene(scene);
         }
-        public void EndGame(NarrativeSceneId finalSceneId)
+        public void EndGame(NarrativeSceneId finalSceneId, GameSession gameSession)
         {
             _events?.Publish(new GameEndedEvent(finalSceneId));
             if (gameEndingPresenter == null)
                 gameEndingPresenter = GameEndingPresenter.Create(transform);
-            gameEndingPresenter.ShowYouDied();
+            gameEndingPresenter.ShowResults(gameSession);
         }
 
         private void ResolveActiveScenePresenter()

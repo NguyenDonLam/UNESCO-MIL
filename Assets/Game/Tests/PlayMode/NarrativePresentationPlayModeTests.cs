@@ -25,7 +25,7 @@ namespace Bedrot.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator GameSceneRoutesLinhAndMinhAnimationsToSeparateSlots()
+        public IEnumerator GameSceneRunsLargeSemanticIdleAnimationsAndUsesCatalogueFacingDirections()
         {
             yield return SceneManager.LoadSceneAsync("Game", LoadSceneMode.Single);
 
@@ -44,8 +44,36 @@ namespace Bedrot.Tests.PlayMode
 
             Animator leftAnimator = GetField<Animator>(leftAdapter, "targetAnimator");
             Animator rightAnimator = GetField<Animator>(rightAdapter, "targetAnimator");
-            Assert.That(leftAnimator.runtimeAnimatorController.name, Is.EqualTo("demo-sprite-idle-brown-ui"));
-            Assert.That(rightAnimator.runtimeAnimatorController.name, Is.EqualTo("demo-sprite-idle-red-ui"));
+            Assert.That(leftAnimator.runtimeAnimatorController.name, Is.EqualTo("linh-worried-idle"));
+            Assert.That(rightAnimator.runtimeAnimatorController.name, Is.EqualTo("minh-serious-idle"));
+            Assert.That(leftAnimator.enabled, Is.True);
+            Assert.That(rightAnimator.enabled, Is.True);
+
+            RectTransform leftTransform = GetField<Image>(leftAdapter, "targetImage").rectTransform;
+            float initialVerticalPosition = leftTransform.anchoredPosition.y;
+            Assert.That(Mathf.Abs(leftTransform.localScale.x), Is.GreaterThan(1.6f));
+            Assert.That(leftTransform.localScale.y, Is.GreaterThan(1.6f));
+            yield return new WaitForSeconds(0.9f);
+            Assert.That(leftTransform.anchoredPosition.y, Is.GreaterThan(initialVerticalPosition),
+                "The idle Animator should move the character through a stepped vertical bop.");
+            Assert.That(leftTransform.localScale.y, Is.EqualTo(1.7141f).Within(0.001f),
+                "The pixel bop must not stretch the sprite.");
+
+            DialoguePresenter dialoguePresenter = GetField<DialoguePresenter>(scenePresenter, "dialoguePresenter");
+            Assert.That(leftAdapter.transform.parent.GetSiblingIndex(),
+                Is.LessThan(dialoguePresenter.transform.GetSiblingIndex()),
+                "The character layer must render behind the dialogue panel.");
+
+            characterPresenter.PresentBeat(new NarrativeBeat(new CharacterId("Vy"), "Right", "vy.firm", SpriteSlot: CharacterSpriteSlot.Right));
+            yield return null;
+            RectTransform vyTransform = GetField<Image>(rightAdapter, "targetImage").rectTransform;
+            Assert.That(vyTransform.localScale.x, Is.LessThan(0f), "Vy should use her catalogue-authored facing direction.");
+
+            characterPresenter.PresentBeat(new NarrativeBeat(new CharacterId("Huong"), "Left", "huong.concerned", SpriteSlot: CharacterSpriteSlot.Left));
+            yield return null;
+            Assert.That(leftAnimator.runtimeAnimatorController.name, Is.EqualTo("huong-concerned-idle"));
+            Assert.That(leftTransform.localScale.x, Is.LessThan(0f),
+                "Hương's opposite-facing source art should be mirrored by its catalogue entry.");
         }
 
         [UnityTest]
@@ -276,7 +304,7 @@ namespace Bedrot.Tests.PlayMode
         {
             public NarrativeScene Scene { get; private set; }
             public void PresentScene(NarrativeScene scene) => Scene = scene;
-            public void EndGame(NarrativeSceneId finalSceneId) { }
+            public void EndGame(NarrativeSceneId finalSceneId, GameSession gameSession) { }
         }
     }
 }

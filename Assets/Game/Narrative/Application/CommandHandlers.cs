@@ -17,7 +17,8 @@ namespace Bedrot.Narrative.Application
         public void Handle(StartNewGameCommand command)
         {
             GameSession session = _store.CreateNew();
-            foreach (string character in new[] { "Linh", "Minh", "Vy" }) session.Relationships.SetScore(new CharacterId(character), 0);
+            foreach (string character in new[] { "Linh", "Minh", "Vy", "Cô Hương" })
+                session.Relationships.SetScore(new CharacterId(character), 0);
             _loader.LoadSceneAsync(_gameSceneName, () =>
             {
                 NarrativeScene opening = _repository.GetOpeningScene();
@@ -80,7 +81,7 @@ namespace Bedrot.Narrative.Application
                 _repository.GetCandidatesForMajorScene(destinationMajorSceneId).Count > 0)
                 return _nextHandler.Handle(new SelectNextNarrativeSceneCommand(destinationMajorSceneId));
 
-            _presentation.EndGame(current.Id);
+            _presentation.EndGame(current.Id, session);
             return current;
         }
     }
