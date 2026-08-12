@@ -135,6 +135,41 @@ namespace Bedrot.Tests.EditMode
         }
 
         [Test]
+        public void BuiltInSceneThreeRunsThroughSharedMergeNodesAndSelectsBalancedOutcome()
+        {
+            Harness harness = StartAtSceneThree();
+            int linhBefore = harness.Session.Relationships.GetScore(Linh);
+            int vyBefore = harness.Session.Relationships.GetScore(Vy);
+
+            harness.Choice("CHOICE_3_1_B"); harness.CompleteCurrent();
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S03_MERGE_01"));
+            harness.Choice("CHOICE_3_2_B"); harness.CompleteCurrent();
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S03_MERGE_02"));
+            harness.Choice("CHOICE_3_3_B"); harness.CompleteCurrent();
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S03_UPDATE"));
+            harness.CompleteCurrent();
+
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S03_OUTCOME_BALANCED"));
+            Assert.That(harness.Session.Relationships.GetScore(Linh) - linhBefore, Is.EqualTo(1));
+            Assert.That(harness.Session.Relationships.GetScore(Vy) - vyBefore, Is.EqualTo(5));
+            Assert.That(harness.Session.StoryFlags.Contains(new StoryFlagId("s03_proportionate_update_published")), Is.True);
+        }
+
+        [TestCase("CHOICE_3_1_A", "CHOICE_3_2_A", "CHOICE_3_3_B", "S03_OUTCOME_OVER_WARNING")]
+        [TestCase("CHOICE_3_1_C", "CHOICE_3_2_C", "CHOICE_3_3_B", "S03_OUTCOME_UNDER_COMMUNICATION")]
+        [TestCase("CHOICE_3_1_A", "CHOICE_3_2_B", "CHOICE_3_3_C", "S03_OUTCOME_MIXED")]
+        public void SceneThreeConsequenceSelectionIsDeterministic(string first, string second, string third, string expectedOutcome)
+        {
+            Harness harness = StartAtSceneThree();
+            harness.Choice(first); harness.CompleteCurrent();
+            harness.Choice(second); harness.CompleteCurrent();
+            harness.Choice(third); harness.CompleteCurrent();
+            harness.CompleteCurrent();
+
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo(expectedOutcome));
+        }
+
+        [Test]
         public void MinimumAndCompositeSpecificationsEvaluateFromGameSession()
         {
             var session = new GameSession(); session.Relationships.ChangeScore(Minh, 2); session.StoryFlags.Set(new StoryFlagId("ready"));
@@ -188,6 +223,21 @@ namespace Bedrot.Tests.EditMode
         }
 
         private static Harness CreateHarness() => new(new ScenarioFactory().CreateBuiltInSceneZeroDefinitions());
+
+        private static Harness StartAtSceneThree()
+        {
+            Harness harness = new(new ScenarioFactory().CreateBuiltInNarrativeDefinitions());
+            harness.Start();
+            harness.GoToEndingWithVerificationChoices(); harness.CompleteCurrent();
+            harness.Choice("CHOICE_1_1_B"); harness.CompleteCurrent();
+            harness.Choice("CHOICE_1_2_B"); harness.CompleteCurrent();
+            harness.Choice("CHOICE_1_3_B"); harness.CompleteCurrent(); harness.CompleteCurrent();
+            harness.Choice("CHOICE_2_1_B"); harness.CompleteCurrent();
+            harness.Choice("CHOICE_2_2_B"); harness.CompleteCurrent();
+            harness.Choice("CHOICE_2_3_B"); harness.CompleteCurrent(); harness.CompleteCurrent();
+            Assert.That(harness.Presentation.Scene.Id.Value, Is.EqualTo("S03_PUBLIC_EMERGENCY"));
+            return harness;
+        }
 
         private sealed class Harness
         {

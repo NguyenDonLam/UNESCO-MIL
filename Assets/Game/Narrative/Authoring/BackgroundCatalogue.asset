@@ -19,3 +19,5 @@ MonoBehaviour:
     Sprite: {fileID: 21300000, guid: 443995879805ff245a6e7731c2d76ca4, type: 3}
   - Cue: background.scene_2_financial_leak
     Sprite: {fileID: 21300000, guid: 9faa4787cc99b2042ac856b1fe03c396, type: 3}
+  - Cue: background.scene_3_public_emergency
+    Sprite: {fileID: 21300000, guid: 9faa4787cc99b2042ac856b1fe03c396, type: 3}

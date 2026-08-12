@@ -132,7 +132,8 @@ namespace Bedrot.Narrative.Authoring
                 Beat("Cô Hương", "Có ai xác nhận chưa?", "huong.tense"),
                 Beat("Minh", "Chưa. Nhưng nếu đây là nguy cơ sức khỏe thật, mình cũng không thể chờ quá lâu.", "minh.serious")
             };
-            return Scene("S02_END", beats, new NarrativeChoice[0]);
+            return Scene("S02_END", beats, new NarrativeChoice[0],
+                new NarrativeSceneTransition(new MajorSceneId("S03")));
         }
 
         private static NarrativeScene Branch(string id, string destination, params NarrativeBeat[] beats) =>
