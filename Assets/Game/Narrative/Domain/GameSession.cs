@@ -40,5 +40,6 @@ namespace Bedrot.Narrative.Domain
         public RelationshipState Relationships { get; } = new();
         public ChoiceHistoryState ChoiceHistory { get; } = new();
         public StoryFlagState StoryFlags { get; } = new();
+        public MediaLiteracyState MediaLiteracy { get; } = new();
     }
 }

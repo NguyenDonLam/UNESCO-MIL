@@ -13,15 +13,18 @@ namespace Bedrot.Narrative.Presentation
         [SerializeField] private CharacterSpritePresenter characterSpritePresenter;
         [SerializeField] private BackgroundPresenter backgroundPresenter;
         [SerializeField] private TransitionPresenter transitionPresenter;
-        private NarrativeScene _scene; private int _beatIndex; private Action<ChoiceId> _selectChoice;
+        private NarrativeScene _scene; private int _beatIndex; private Action<ChoiceId> _selectChoice; private Action<NarrativeSceneId> _completeScene;
         private IGameEventPublisher _events; private readonly NarrativeFlowStateMachine _stateMachine = new();
         public NarrativeScene CurrentScene => _scene;
         public int CurrentBeatIndex => _beatIndex;
 
-        public void Bind(Action<ChoiceId> selectChoice, IGameEventPublisher events) { _selectChoice = selectChoice; _events = events; }
+        public void Bind(Action<ChoiceId> selectChoice, Action<NarrativeSceneId> completeScene, IGameEventPublisher events)
+        { _selectChoice = selectChoice; _completeScene = completeScene; _events = events; }
+        public void Bind(Action<ChoiceId> selectChoice, IGameEventPublisher events) => Bind(selectChoice, null, events);
         public void PresentScene(NarrativeScene scene)
         {
             _scene = scene ?? throw new ArgumentNullException(nameof(scene)); _beatIndex = 0;
+            dialoguePresenter?.BindAdvanceRequest(AdvanceDialogue);
             choicePresenter.HideChoices(); transitionPresenter?.SetVisible(false);
             _stateMachine.ChangeState(new LoadingNarrativeSceneState());
             if (_scene.Beats.Count == 0) { ShowChoicesOrEnd(); return; }
@@ -30,18 +33,26 @@ namespace Bedrot.Narrative.Presentation
         public void AdvanceDialogue()
         {
             if (_scene == null || _stateMachine.CurrentState is WaitingForChoiceState || _stateMachine.CurrentState is EndingState) return;
+            if (dialoguePresenter != null && dialoguePresenter.CompleteRevealImmediately()) return;
             if (++_beatIndex < _scene.Beats.Count) PresentCurrentBeat(); else ShowChoicesOrEnd();
         }
         private void PresentCurrentBeat()
         {
             _stateMachine.ChangeState(new PresentingDialogueState());
             NarrativeBeat beat = _scene.Beats[_beatIndex]; dialoguePresenter.PresentBeat(beat);
-            characterSpritePresenter?.PresentBeat(beat); backgroundPresenter?.PresentBeat(beat);
+            characterSpritePresenter?.PresentBeat(beat);
+            backgroundPresenter?.PresentBeat(beat);
             _events?.Publish(new NarrativeBeatChangedEvent(_scene.Id, _beatIndex));
         }
         private void ShowChoicesOrEnd()
         {
-            if (_scene.Choices.Count == 0) { _stateMachine.ChangeState(new EndingState()); return; }
+            if (_scene.Choices.Count == 0)
+            {
+                _stateMachine.ChangeState(new EndingState());
+                characterSpritePresenter?.Hide();
+                _completeScene?.Invoke(_scene.Id);
+                return;
+            }
             _stateMachine.ChangeState(new WaitingForChoiceState());
             choicePresenter.PresentChoices(_scene.Choices, SelectChoice);
         }

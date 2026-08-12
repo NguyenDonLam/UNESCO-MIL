@@ -11,6 +11,7 @@ namespace Bedrot.Narrative.Application
     public sealed record NarrativeBeatChangedEvent(NarrativeSceneId SceneId, int BeatIndex) : IGameEvent;
     public sealed record ChoiceSelectedEvent(ChoiceId ChoiceId) : IGameEvent;
     public sealed record RelationshipScoreChangedEvent(CharacterId CharacterId, int PreviousScore, int CurrentScore) : IGameEvent;
+    public sealed record MediaLiteracyScoreChangedEvent(MediaLiteracyMetric Metric, int PreviousScore, int CurrentScore) : IGameEvent;
     public sealed record NarrativeSceneCompletedEvent(NarrativeSceneId SceneId) : IGameEvent;
     public sealed record NarrativeSceneSelectedEvent(NarrativeSceneId SceneId) : IGameEvent;
     public sealed record GameEndedEvent(NarrativeSceneId FinalSceneId) : IGameEvent;

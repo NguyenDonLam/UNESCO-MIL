@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7de54a55d3d4f74be83a581d7995905, type: 3}
+  m_Name: LeftCharacterSpriteCatalogue
+  m_EditorClassIdentifier: Bedrot.Runtime::Bedrot.Narrative.Presentation.CharacterSpriteCatalogueAsset
+  entries:
+  - Cue: linh.worried
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: 56905052f5ce4fd28d00d9b061814af1, type: 2}
+    AnimationStateName: 
+  - Cue: linh.surprised
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: f217d1c5655741f2ac1a19bc047c873f, type: 2}
+    AnimationStateName: 
+  - Cue: minh.serious
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: de6440780d314dd9aaca12532401105b, type: 2}
+    AnimationStateName: 
+  - Cue: demo.cyan
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: 061e9700efe24e20993c74b3a576abd7, type: 2}
+    AnimationStateName: 
+  - Cue: demo.purple
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: d804605882694fd29757ecbd04f5a909, type: 2}
+    AnimationStateName: 
+  - Cue: demo.magenta
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: 8ba8693d0fd04a79a6afb400b4a56a03, type: 2}
+    AnimationStateName: 
+  - Cue: vy.uncomfortable
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: 8ba8693d0fd04a79a6afb400b4a56a03, type: 2}
+    AnimationStateName:
+  - Cue: vy.firm
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: de6440780d314dd9aaca12532401105b, type: 2}
+    AnimationStateName:
+  - Cue: huong.tense
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: 061e9700efe24e20993c74b3a576abd7, type: 2}
+    AnimationStateName:
+  - Cue: huong.concerned
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: d804605882694fd29757ecbd04f5a909, type: 2}
+    AnimationStateName:
+  - Cue: huong.relieved
+    Sprite: {fileID: 0}
+    AnimationController: {fileID: 9100000, guid: f217d1c5655741f2ac1a19bc047c873f, type: 2}
+    AnimationStateName:

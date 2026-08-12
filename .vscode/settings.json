@@ -70,6 +70,7 @@
     "dotnet.defaultSolution": "UNESCO-MIL.slnx",
     "folder-color.pathColors": [],
     "conventionalCommits.scopes": [
-        "Main Menu"
+        "Main Menu",
+        "Demo Scene"
     ]
 }
