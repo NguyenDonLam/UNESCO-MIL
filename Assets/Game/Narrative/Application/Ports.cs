@@ -16,7 +16,7 @@ namespace Bedrot.Narrative.Application
     public interface INarrativePresentationGateway
     {
         void PresentScene(NarrativeScene scene);
-        void EndGame(NarrativeSceneId finalSceneId);
+        void EndGame(NarrativeSceneId finalSceneId, GameSession gameSession);
     }
 
     public interface IUnitySceneLoadingAdapter

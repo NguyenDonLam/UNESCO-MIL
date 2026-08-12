@@ -14,46 +14,57 @@ MonoBehaviour:
   m_EditorClassIdentifier: Bedrot.Runtime::Bedrot.Narrative.Presentation.CharacterSpriteCatalogueAsset
   entries:
   - Cue: linh.worried
-    Sprite: {fileID: 0}
-    AnimationController: {fileID: 9100000, guid: 56905052f5ce4fd28d00d9b061814af1, type: 2}
-    AnimationStateName: 
+    Sprite: {fileID: 21300000, guid: 837c985d6a6c3f849b19ccf4ef167dd5, type: 3}
+    AnimationController: {fileID: 9100000, guid: 1c3029080c5a83f4880d01b4b76347b7, type: 2}
+    AnimationStateName:
+    FlipHorizontal: 0
   - Cue: linh.surprised
-    Sprite: {fileID: 0}
-    AnimationController: {fileID: 9100000, guid: f217d1c5655741f2ac1a19bc047c873f, type: 2}
-    AnimationStateName: 
+    Sprite: {fileID: 21300000, guid: 02932521c346dc54fb0fe0da9793bac8, type: 3}
+    AnimationController: {fileID: 9100000, guid: 73a59800628efa441b2d71a03e7967a8, type: 2}
+    AnimationStateName:
+    FlipHorizontal: 0
   - Cue: minh.serious
-    Sprite: {fileID: 0}
-    AnimationController: {fileID: 9100000, guid: de6440780d314dd9aaca12532401105b, type: 2}
-    AnimationStateName: 
+    Sprite: {fileID: 21300000, guid: 9d93ab1da7a10d44b825b903329ed81f, type: 3}
+    AnimationController: {fileID: 9100000, guid: e77705daaef020d46b59c604a825a924, type: 2}
+    AnimationStateName:
+    FlipHorizontal: 0
   - Cue: demo.cyan
     Sprite: {fileID: 0}
     AnimationController: {fileID: 9100000, guid: 061e9700efe24e20993c74b3a576abd7, type: 2}
-    AnimationStateName: 
+    AnimationStateName:
+    FlipHorizontal: 0
   - Cue: demo.purple
     Sprite: {fileID: 0}
     AnimationController: {fileID: 9100000, guid: d804605882694fd29757ecbd04f5a909, type: 2}
-    AnimationStateName: 
+    AnimationStateName:
+    FlipHorizontal: 0
   - Cue: demo.magenta
     Sprite: {fileID: 0}
     AnimationController: {fileID: 9100000, guid: 8ba8693d0fd04a79a6afb400b4a56a03, type: 2}
-    AnimationStateName: 
+    AnimationStateName:
+    FlipHorizontal: 0
   - Cue: vy.uncomfortable
-    Sprite: {fileID: 0}
-    AnimationController: {fileID: 9100000, guid: 8ba8693d0fd04a79a6afb400b4a56a03, type: 2}
+    Sprite: {fileID: 21300000, guid: cc2607b15b8fe3846bb000203e25bd9e, type: 3}
+    AnimationController: {fileID: 9100000, guid: 3cafae062d715a043849d4e807571432, type: 2}
     AnimationStateName:
+    FlipHorizontal: 1
   - Cue: vy.firm
-    Sprite: {fileID: 0}
-    AnimationController: {fileID: 9100000, guid: de6440780d314dd9aaca12532401105b, type: 2}
+    Sprite: {fileID: 21300000, guid: 1fd4b4c8deb8aba48b6fab10c47754dd, type: 3}
+    AnimationController: {fileID: 9100000, guid: 17c54c48f559eee47a505c31fd3df2f5, type: 2}
     AnimationStateName:
+    FlipHorizontal: 1
   - Cue: huong.tense
-    Sprite: {fileID: 0}
-    AnimationController: {fileID: 9100000, guid: 061e9700efe24e20993c74b3a576abd7, type: 2}
+    Sprite: {fileID: 21300000, guid: bf5bd7ecc006ba64aa0231ff2313627e, type: 3}
+    AnimationController: {fileID: 9100000, guid: 8f5902ec37184eef92ec2b0f134d325b, type: 2}
     AnimationStateName:
+    FlipHorizontal: 1
   - Cue: huong.concerned
-    Sprite: {fileID: 0}
-    AnimationController: {fileID: 9100000, guid: d804605882694fd29757ecbd04f5a909, type: 2}
+    Sprite: {fileID: 21300000, guid: 5f27b3f40c23c5540a71f118f3d49a3d, type: 3}
+    AnimationController: {fileID: 9100000, guid: c1975f2fcd1d462785311523146992cc, type: 2}
     AnimationStateName:
+    FlipHorizontal: 1
   - Cue: huong.relieved
-    Sprite: {fileID: 0}
-    AnimationController: {fileID: 9100000, guid: f217d1c5655741f2ac1a19bc047c873f, type: 2}
+    Sprite: {fileID: 21300000, guid: aa22a52945cb32d489b6262c23ae48a5, type: 3}
+    AnimationController: {fileID: 9100000, guid: 4d8dd6945a914181958c653353ac5e88, type: 2}
     AnimationStateName:
+    FlipHorizontal: 1
