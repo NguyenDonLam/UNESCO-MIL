@@ -14,14 +14,23 @@ namespace Bedrot.Narrative.Presentation
             rectTransform.offsetMax = Vector2.zero;
         }
 
-        /// <summary>Stretches horizontally and pins the top edge, giving a fixed height band from the top.</summary>
+        /// <summary>Stretches horizontally and pins the top edge, giving a fixed height band with independent left/right margins.</summary>
         public static void SetInsets(this RectTransform rectTransform, float top, float height, float left, float right)
         {
             rectTransform.anchorMin = new Vector2(0f, 1f);
             rectTransform.anchorMax = new Vector2(1f, 1f);
-            rectTransform.pivot = new Vector2(0.5f, 1f);
-            rectTransform.anchoredPosition = new Vector2(0f, -top);
-            rectTransform.sizeDelta = new Vector2(-(left + right), height);
+            rectTransform.offsetMin = new Vector2(left, -(top + height));
+            rectTransform.offsetMax = new Vector2(-right, -top);
+        }
+
+        /// <summary>Pins a fixed-size element to the top-left corner of its parent.</summary>
+        public static void SetTopLeft(this RectTransform rectTransform, float top, float left, Vector2 size)
+        {
+            rectTransform.anchorMin = new Vector2(0f, 1f);
+            rectTransform.anchorMax = new Vector2(0f, 1f);
+            rectTransform.pivot = new Vector2(0f, 1f);
+            rectTransform.sizeDelta = size;
+            rectTransform.anchoredPosition = new Vector2(left, -top);
         }
     }
 
@@ -29,6 +38,11 @@ namespace Bedrot.Narrative.Presentation
     internal static class RuntimeUIFactory
     {
         public static Font DefaultFont => Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
+        private static Font _pixelFont;
+        /// <summary>The pixel-art display font used by the SIFT toolkit UI.</summary>
+        public static Font PixelFont => _pixelFont != null ? _pixelFont
+            : _pixelFont = Resources.Load<Font>("Fonts/SVN-Determination Sans") ?? DefaultFont;
 
         public static void Stretch(RectTransform rectTransform) => rectTransform.Stretch();
 
@@ -59,12 +73,12 @@ namespace Bedrot.Narrative.Presentation
             return image;
         }
 
-        public static Text CreateText(Transform parent, string name, string content, int fontSize, TextAnchor alignment, Color color)
+        public static Text CreateText(Transform parent, string name, string content, int fontSize, TextAnchor alignment, Color color, Font font = null)
         {
             var textObject = new GameObject(name, typeof(RectTransform), typeof(Text));
             textObject.transform.SetParent(parent, false);
             Text text = textObject.GetComponent<Text>();
-            text.font = DefaultFont;
+            text.font = font != null ? font : DefaultFont;
             text.text = content;
             text.fontSize = fontSize;
             text.alignment = alignment;
@@ -74,7 +88,7 @@ namespace Bedrot.Narrative.Presentation
             return text;
         }
 
-        public static Button CreateButton(Transform parent, string name, string label, Color backgroundColor, int fontSize = 28)
+        public static Button CreateButton(Transform parent, string name, string label, Color backgroundColor, int fontSize = 28, Font font = null)
         {
             var buttonObject = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
             buttonObject.transform.SetParent(parent, false);
@@ -83,9 +97,106 @@ namespace Bedrot.Narrative.Presentation
             Button button = buttonObject.GetComponent<Button>();
             button.targetGraphic = background;
 
-            Text label1 = CreateText(buttonObject.transform, "Label", label, fontSize, TextAnchor.MiddleCenter, Color.white);
+            Text label1 = CreateText(buttonObject.transform, "Label", label, fontSize, TextAnchor.MiddleCenter, Color.white, font);
             Stretch((RectTransform)label1.transform);
             return button;
+        }
+
+        /// <summary>Creates a button with an outlined frame (border color ring, inset fill, centered label using the border color).</summary>
+        public static Button CreateOutlinedButton(Transform parent, string name, string label, Color fillColor, Color borderColor, Font font, int fontSize = 28, float borderThickness = 3f)
+        {
+            var buttonObject = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            buttonObject.transform.SetParent(parent, false);
+            Image border = buttonObject.GetComponent<Image>();
+            border.color = borderColor;
+
+            var fillObject = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fillObject.transform.SetParent(buttonObject.transform, false);
+            RectTransform fillRect = (RectTransform)fillObject.transform;
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = new Vector2(borderThickness, borderThickness);
+            fillRect.offsetMax = new Vector2(-borderThickness, -borderThickness);
+            fillObject.GetComponent<Image>().color = fillColor;
+
+            Button button = buttonObject.GetComponent<Button>();
+            button.targetGraphic = border;
+
+            Text label1 = CreateText(fillObject.transform, "Label", label, fontSize, TextAnchor.MiddleCenter, borderColor, font);
+            Stretch((RectTransform)label1.transform);
+            return button;
+        }
+
+        /// <summary>Creates a bordered square icon tile with a single centered letter, used by the SIFT step rows.</summary>
+        public static Image CreateIconSquare(Transform parent, string name, string letter, Color fillColor, Color borderColor, float size, Font font, float borderThickness = 5f)
+        {
+            var borderObject = new GameObject(name, typeof(RectTransform), typeof(Image));
+            borderObject.transform.SetParent(parent, false);
+            RectTransform borderRect = (RectTransform)borderObject.transform;
+            borderRect.sizeDelta = new Vector2(size, size);
+            Image border = borderObject.GetComponent<Image>();
+            border.color = borderColor;
+
+            var fillObject = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fillObject.transform.SetParent(borderObject.transform, false);
+            RectTransform fillRect = (RectTransform)fillObject.transform;
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = new Vector2(borderThickness, borderThickness);
+            fillRect.offsetMax = new Vector2(-borderThickness, -borderThickness);
+            fillObject.GetComponent<Image>().color = fillColor;
+
+            Text letterText = CreateText(fillObject.transform, "Letter", letter, Mathf.RoundToInt(size * 0.5f), TextAnchor.MiddleCenter, Color.white, font);
+            Stretch((RectTransform)letterText.transform);
+            return border;
+        }
+
+        /// <summary>Creates the cyan-bracket sci-fi panel frame used by the SIFT toolkit UI: an outer border, an inset fill, and small corner tabs.</summary>
+        public static (RectTransform Frame, RectTransform Content) CreateBracketPanel(Transform parent, string name, Vector2 size, Color borderColor, Color fillColor, float borderThickness = 6f)
+        {
+            var frameObject = new GameObject(name, typeof(RectTransform), typeof(Image));
+            frameObject.transform.SetParent(parent, false);
+            RectTransform frameRect = (RectTransform)frameObject.transform;
+            frameRect.anchorMin = frameRect.anchorMax = new Vector2(0.5f, 0.5f);
+            frameRect.sizeDelta = size;
+            frameObject.GetComponent<Image>().color = borderColor;
+
+            var fillObject = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fillObject.transform.SetParent(frameObject.transform, false);
+            RectTransform fillRect = (RectTransform)fillObject.transform;
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = new Vector2(borderThickness, borderThickness);
+            fillRect.offsetMax = new Vector2(-borderThickness, -borderThickness);
+            fillObject.GetComponent<Image>().color = fillColor;
+
+            CreateCornerTabs(frameRect, borderColor);
+            return (frameRect, fillRect);
+        }
+
+        private static void CreateCornerTabs(RectTransform frameRect, Color borderColor)
+        {
+            Color tabColor = new Color(borderColor.r * 0.35f, borderColor.g * 0.4f, borderColor.b * 0.45f, 1f);
+            const float tabWidth = 46f;
+            const float tabHeight = 12f;
+            const float inset = 30f;
+
+            CreateTab(frameRect, new Vector2(0f, 1f), new Vector2(inset, tabHeight * 0.5f), new Vector2(tabWidth, tabHeight), tabColor);
+            CreateTab(frameRect, new Vector2(1f, 1f), new Vector2(-inset, tabHeight * 0.5f), new Vector2(tabWidth, tabHeight), tabColor);
+            CreateTab(frameRect, new Vector2(0f, 0f), new Vector2(inset, -tabHeight * 0.5f), new Vector2(tabWidth, tabHeight), tabColor);
+            CreateTab(frameRect, new Vector2(1f, 0f), new Vector2(-inset, -tabHeight * 0.5f), new Vector2(tabWidth, tabHeight), tabColor);
+        }
+
+        private static void CreateTab(RectTransform parent, Vector2 anchor, Vector2 anchoredPosition, Vector2 sizeDelta, Color color)
+        {
+            var tabObject = new GameObject("CornerTab", typeof(RectTransform), typeof(Image));
+            tabObject.transform.SetParent(parent, false);
+            RectTransform tabRect = (RectTransform)tabObject.transform;
+            tabRect.anchorMin = tabRect.anchorMax = anchor;
+            tabRect.pivot = anchor;
+            tabRect.anchoredPosition = anchoredPosition;
+            tabRect.sizeDelta = sizeDelta;
+            tabObject.GetComponent<Image>().color = color;
         }
 
         public static Toggle CreateToggle(Transform parent, string name, string label)

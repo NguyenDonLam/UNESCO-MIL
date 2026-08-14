@@ -11,6 +11,9 @@ namespace Bedrot.Narrative.Presentation
 {
     public sealed class GamePresentationGateway : MonoBehaviour, INarrativePresentationGateway
     {
+        /// <summary>PlayerPrefs key tracking whether the player has ever dismissed the SIFT introduction card.</summary>
+        public const string HasSeenSIFTIntroPrefKey = "Bedrot.SIFT.HasSeenIntro";
+
         [SerializeField] private GameEndingPresenter gameEndingPresenter;
 
         private SIFTToolkitPresenter _siftToolkit;
@@ -50,8 +53,19 @@ namespace Bedrot.Narrative.Presentation
 
         public void ShowSIFTInformationCard(Action onBeginCheck)
         {
+            if (PlayerPrefs.GetInt(HasSeenSIFTIntroPrefKey, 0) != 0)
+            {
+                onBeginCheck?.Invoke();
+                return;
+            }
+
             EnsurePersistentPresenters();
-            _siftCard.Show(onBeginCheck);
+            _siftCard.Show(() =>
+            {
+                PlayerPrefs.SetInt(HasSeenSIFTIntroPrefKey, 1);
+                PlayerPrefs.Save();
+                onBeginCheck?.Invoke();
+            });
         }
 
         public void PresentScene(NarrativeScene scene, GameSession gameSession)

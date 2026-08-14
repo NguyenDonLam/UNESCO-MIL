@@ -6,13 +6,13 @@ namespace Bedrot.Narrative.Presentation
     /// <summary>Persistent collapsible toolkit icon shown in the corner during gameplay. Click to expand/collapse the SIFT steps.</summary>
     public sealed class SIFTToolkitPresenter : MonoBehaviour
     {
-        private static readonly (string Step, string Title, string Description)[] Steps =
-        {
-            ("S", "Dừng lại", "Trước khi tin hay chia sẻ, hãy dừng lại và kiểm tra cảm xúc của bạn."),
-            ("I", "Kiểm tra nguồn", "Bạn có biết gì về nguồn thông tin này không? Nó có đáng tin không?"),
-            ("F", "Tìm nguồn tốt hơn", "Xem các nguồn uy tín khác có đưa tin tương tự không."),
-            ("T", "Truy nguyên gốc", "Tìm lại ngữ cảnh và nguồn gốc ban đầu của thông tin hoặc hình ảnh."),
-        };
+        private static readonly Color BorderCyan = new(0.31f, 0.85f, 0.91f);
+        private static readonly Color PanelFill = new(0.08f, 0.11f, 0.19f);
+        private static readonly Color DescriptionColor = new(0.85f, 0.85f, 0.87f);
+
+        private const float IconSize = 92f;
+        private const float RowHeight = 88f;
+        private const float RowSpacing = 12f;
 
         private GameObject _panel;
         private bool _isExpanded;
@@ -21,49 +21,49 @@ namespace Bedrot.Narrative.Presentation
         {
             GameObject root = RuntimeUIFactory.CreateOverlayCanvas("SIFTToolkitView", parent, short.MaxValue - 20);
             root.AddComponent<CanvasGroup>();
+            Font pixelFont = RuntimeUIFactory.PixelFont;
 
-            var iconObject = new GameObject("ToolkitIcon", typeof(RectTransform), typeof(Image), typeof(Button));
-            iconObject.transform.SetParent(root.transform, false);
-            RectTransform iconRect = (RectTransform)iconObject.transform;
-            iconRect.anchorMin = iconRect.anchorMax = new Vector2(0f, 1f);
-            iconRect.pivot = new Vector2(0f, 1f);
-            iconRect.sizeDelta = new Vector2(96f, 96f);
-            iconRect.anchoredPosition = new Vector2(24f, -24f);
-            iconObject.GetComponent<Image>().color = new Color(0.15f, 0.35f, 0.6f, 0.9f);
-            RuntimeUIFactory.Stretch(RuntimeUIFactory.CreateText(iconObject.transform, "Label", "SIFT", 26, TextAnchor.MiddleCenter, Color.white).rectTransform);
+            Image iconButton = RuntimeUIFactory.CreateIconSquare(root.transform, "ToolkitIcon", "SIFT", PanelFill, BorderCyan, IconSize, pixelFont);
+            RectTransform iconRect = iconButton.rectTransform;
+            iconRect.SetTopLeft(24f, 24f, new Vector2(IconSize, IconSize));
+            Button iconButtonComponent = iconButton.gameObject.AddComponent<Button>();
+            iconButtonComponent.targetGraphic = iconButton;
 
-            var panel = new GameObject("StepsPanel", typeof(RectTransform), typeof(Image));
-            panel.transform.SetParent(root.transform, false);
-            RectTransform panelRect = (RectTransform)panel.transform;
-            panelRect.anchorMin = panelRect.anchorMax = new Vector2(0f, 1f);
-            panelRect.pivot = new Vector2(0f, 1f);
-            panelRect.sizeDelta = new Vector2(560f, 340f);
-            panelRect.anchoredPosition = new Vector2(24f, -132f);
-            panel.GetComponent<Image>().color = new Color(0.05f, 0.08f, 0.12f, 0.92f);
+            SIFTStep[] steps = SIFTStepData.Steps;
+            float panelHeight = steps.Length * (RowHeight + RowSpacing) + 40f;
+            (RectTransform panelFrame, RectTransform panelContent) = RuntimeUIFactory.CreateBracketPanel(
+                root.transform, "StepsPanel", new Vector2(620f, panelHeight), BorderCyan, PanelFill);
+            panelFrame.anchorMin = panelFrame.anchorMax = new Vector2(0f, 1f);
+            panelFrame.pivot = new Vector2(0f, 1f);
+            panelFrame.anchoredPosition = new Vector2(24f, -(IconSize + 48f));
 
-            var layout = panel.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(20, 20, 16, 16);
-            layout.spacing = 10f;
-            layout.childControlHeight = false;
-            layout.childControlWidth = true;
-            layout.childForceExpandHeight = false;
-            layout.childForceExpandWidth = true;
-
-            foreach ((string step, string title, string description) in Steps)
-            {
-                var row = new GameObject($"Step{step}", typeof(RectTransform), typeof(LayoutElement));
-                row.transform.SetParent(panel.transform, false);
-                row.GetComponent<LayoutElement>().preferredHeight = 70f;
-                Text rowText = RuntimeUIFactory.CreateText(row.transform, "Text", $"{step} — {title}\n{description}", 20, TextAnchor.UpperLeft, Color.white);
-                RuntimeUIFactory.Stretch(rowText.rectTransform);
-            }
+            for (int index = 0; index < steps.Length; index++)
+                BuildStepRow(panelContent, steps[index], index, pixelFont);
 
             SIFTToolkitPresenter presenter = root.AddComponent<SIFTToolkitPresenter>();
-            presenter._panel = panel;
-            iconObject.GetComponent<Button>().onClick.AddListener(presenter.TogglePanel);
+            presenter._panel = panelFrame.gameObject;
+            iconButtonComponent.onClick.AddListener(presenter.TogglePanel);
             presenter.CollapsePanel();
             presenter.HideIcon();
             return presenter;
+        }
+
+        private static void BuildStepRow(Transform panelContent, SIFTStep step, int index, Font pixelFont)
+        {
+            const float iconSize = 56f;
+            var row = new GameObject($"Step{step.Letter}", typeof(RectTransform));
+            row.transform.SetParent(panelContent, false);
+            RectTransform rowRect = (RectTransform)row.transform;
+            rowRect.SetInsets(20f + index * (RowHeight + RowSpacing), RowHeight, 20f, 20f);
+
+            Image icon = RuntimeUIFactory.CreateIconSquare(row.transform, "Icon", step.Letter, step.IconFillColor, step.IconBorderColor, iconSize, pixelFont);
+            icon.rectTransform.SetTopLeft(0f, 0f, new Vector2(iconSize, iconSize));
+
+            Text title = RuntimeUIFactory.CreateText(row.transform, "Title", step.Title, 20, TextAnchor.UpperLeft, step.AccentColor, pixelFont);
+            title.rectTransform.SetInsets(0f, 28f, iconSize + 16f, 0f);
+
+            Text description = RuntimeUIFactory.CreateText(row.transform, "Description", step.Description, 16, TextAnchor.UpperLeft, DescriptionColor);
+            description.rectTransform.SetInsets(30f, 56f, iconSize + 16f, 0f);
         }
 
         public void ShowIcon() => gameObject.SetActive(true);
