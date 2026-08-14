@@ -314,7 +314,8 @@ namespace Bedrot.Tests.EditMode
         {
             public NarrativeScene Scene { get; private set; }
             public NarrativeSceneId? EndedAt { get; private set; }
-            public void PresentScene(NarrativeScene scene) => Scene = scene;
+            public void ShowSIFTInformationCard(Action onBeginCheck) => onBeginCheck?.Invoke();
+            public void PresentScene(NarrativeScene scene, GameSession gameSession) => Scene = scene;
             public void EndGame(NarrativeSceneId finalSceneId, GameSession gameSession) => EndedAt = finalSceneId;
         }
     }

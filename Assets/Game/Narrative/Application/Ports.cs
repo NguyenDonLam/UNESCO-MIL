@@ -15,7 +15,8 @@ namespace Bedrot.Narrative.Application
 
     public interface INarrativePresentationGateway
     {
-        void PresentScene(NarrativeScene scene);
+        void ShowSIFTInformationCard(Action onBeginCheck);
+        void PresentScene(NarrativeScene scene, GameSession gameSession);
         void EndGame(NarrativeSceneId finalSceneId, GameSession gameSession);
     }
 

@@ -25,7 +25,7 @@ namespace Bedrot.Narrative.Application
                 session.NarrativeProgress.Enter(opening.Id);
                 _events.Publish(new NewGameStartedEvent(opening.Id));
                 _events.Publish(new NarrativeSceneEnteredEvent(opening.Id));
-                _presentation.PresentScene(opening);
+                _presentation.ShowSIFTInformationCard(() => _presentation.PresentScene(opening, session));
             });
         }
     }
@@ -47,7 +47,7 @@ namespace Bedrot.Narrative.Application
             _store.Current.NarrativeProgress.Enter(scene.Id);
             _events.Publish(new NarrativeSceneSelectedEvent(scene.Id));
             _events.Publish(new NarrativeSceneEnteredEvent(scene.Id));
-            _presentation.PresentScene(scene);
+            _presentation.PresentScene(scene, _store.Current);
             return scene;
         }
     }

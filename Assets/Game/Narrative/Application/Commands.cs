@@ -23,4 +23,12 @@ namespace Bedrot.Narrative.Application
         { MajorSceneId = majorSceneId; DirectDestinationSceneId = directDestinationSceneId; }
     }
     public readonly struct RestartGameCommand { }
+    public readonly struct SubmitCommunityContributionCommand
+    {
+        public string SituationType { get; }
+        public string Description { get; }
+        public bool ConsentToShare { get; }
+        public SubmitCommunityContributionCommand(string situationType, string description, bool consentToShare)
+        { SituationType = situationType; Description = description; ConsentToShare = consentToShare; }
+    }
 }

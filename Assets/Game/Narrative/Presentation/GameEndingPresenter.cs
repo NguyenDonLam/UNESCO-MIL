@@ -1,17 +1,26 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Bedrot.Narrative.Domain;
+using Bedrot.Shared;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace Bedrot.Narrative.Presentation
 {
-    /// <summary>Presents the terminal screen after the final narrative scene.</summary>
+    /// <summary>Presents the terminal screen after the final narrative scene, with a final variable snapshot and next-step choices.</summary>
     public sealed class GameEndingPresenter : MonoBehaviour
     {
         private CanvasGroup _canvasGroup;
         private Text _messageText;
+        private Transform _snapshotContainer;
+        private GameObject _journeyPanel;
+        private Text _journeyText;
+        private bool _journeyExpanded;
+        private Action _onPlayAgain;
+        private Action _onShareExperience;
+        private GameSession _lastSession;
 
         public static GameEndingPresenter Create(Transform parent)
         {
@@ -38,29 +47,100 @@ namespace Bedrot.Narrative.Presentation
 
             var message = new GameObject("EndingMessage", typeof(RectTransform), typeof(Text));
             message.transform.SetParent(root.transform, false);
-            Stretch(message.GetComponent<RectTransform>());
+            RectTransform messageRect = message.GetComponent<RectTransform>();
+            messageRect.anchorMin = new Vector2(0f, 0.42f);
+            messageRect.anchorMax = new Vector2(1f, 1f);
+            messageRect.offsetMin = new Vector2(60f, 0f);
+            messageRect.offsetMax = new Vector2(-60f, -40f);
             Text text = message.GetComponent<Text>();
             text.text = string.Empty;
-            text.alignment = TextAnchor.MiddleCenter;
+            text.alignment = TextAnchor.UpperCenter;
             text.color = Color.white;
-            text.fontSize = 48;
+            text.fontSize = 40;
             text.resizeTextForBestFit = true;
-            text.resizeTextMinSize = 20;
-            text.resizeTextMaxSize = 48;
+            text.resizeTextMinSize = 18;
+            text.resizeTextMaxSize = 40;
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
+            var snapshot = new GameObject("FinalVariables", typeof(RectTransform));
+            snapshot.transform.SetParent(root.transform, false);
+            RectTransform snapshotRect = (RectTransform)snapshot.transform;
+            snapshotRect.anchorMin = new Vector2(0.15f, 0.22f);
+            snapshotRect.anchorMax = new Vector2(0.85f, 0.42f);
+            snapshotRect.offsetMin = snapshotRect.offsetMax = Vector2.zero;
+            var snapshotLayout = snapshot.AddComponent<GridLayoutGroup>();
+            snapshotLayout.cellSize = new Vector2(280f, 36f);
+            snapshotLayout.spacing = new Vector2(16f, 4f);
+            snapshotLayout.childAlignment = TextAnchor.UpperCenter;
+
+            var journeyPanel = new GameObject("JourneyPanel", typeof(RectTransform), typeof(Image));
+            journeyPanel.transform.SetParent(root.transform, false);
+            RectTransform journeyRect = (RectTransform)journeyPanel.transform;
+            journeyRect.anchorMin = new Vector2(0.2f, 0.22f);
+            journeyRect.anchorMax = new Vector2(0.8f, 0.9f);
+            journeyRect.offsetMin = journeyRect.offsetMax = Vector2.zero;
+            journeyPanel.GetComponent<Image>().color = new Color(0.05f, 0.06f, 0.08f, 0.97f);
+            var journeyText = new GameObject("JourneyText", typeof(RectTransform), typeof(Text));
+            journeyText.transform.SetParent(journeyPanel.transform, false);
+            RectTransform journeyTextRect = journeyText.GetComponent<RectTransform>();
+            journeyTextRect.anchorMin = Vector2.zero; journeyTextRect.anchorMax = Vector2.one;
+            journeyTextRect.offsetMin = new Vector2(30f, 30f); journeyTextRect.offsetMax = new Vector2(-30f, -30f);
+            Text journeyTextComponent = journeyText.GetComponent<Text>();
+            journeyTextComponent.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            journeyTextComponent.fontSize = 22;
+            journeyTextComponent.color = Color.white;
+            journeyTextComponent.alignment = TextAnchor.UpperLeft;
+            journeyPanel.SetActive(false);
+
+            var buttonRow = new GameObject("Buttons", typeof(RectTransform));
+            buttonRow.transform.SetParent(root.transform, false);
+            RectTransform buttonRowRect = (RectTransform)buttonRow.transform;
+            buttonRowRect.anchorMin = new Vector2(0.5f, 0f);
+            buttonRowRect.anchorMax = new Vector2(0.5f, 0f);
+            buttonRowRect.pivot = new Vector2(0.5f, 0f);
+            buttonRowRect.sizeDelta = new Vector2(1000f, 80f);
+            buttonRowRect.anchoredPosition = new Vector2(0f, 50f);
+            var buttonLayout = buttonRow.AddComponent<HorizontalLayoutGroup>();
+            buttonLayout.spacing = 24f;
+            buttonLayout.childControlWidth = false;
+            buttonLayout.childControlHeight = false;
+            buttonLayout.childAlignment = TextAnchor.MiddleCenter;
+
+            Button playAgainButton = RuntimeUIFactory.CreateButton(buttonRow.transform, "PlayAgainButton", "Chơi lại", new Color(0.2f, 0.55f, 0.3f), 26);
+            playAgainButton.GetComponent<RectTransform>().sizeDelta = new Vector2(260f, 68f);
+            Button reviewJourneyButton = RuntimeUIFactory.CreateButton(buttonRow.transform, "ReviewJourneyButton", "Xem lại hành trình", new Color(0.3f, 0.3f, 0.33f), 26);
+            reviewJourneyButton.GetComponent<RectTransform>().sizeDelta = new Vector2(320f, 68f);
+            Button shareButton = RuntimeUIFactory.CreateButton(buttonRow.transform, "ShareExperienceButton", "Chia sẻ trải nghiệm", new Color(0.2f, 0.4f, 0.65f), 26);
+            shareButton.GetComponent<RectTransform>().sizeDelta = new Vector2(320f, 68f);
 
             GameEndingPresenter presenter = root.GetComponent<GameEndingPresenter>();
             presenter._canvasGroup = root.GetComponent<CanvasGroup>();
             presenter._messageText = text;
+            presenter._snapshotContainer = snapshot.transform;
+            presenter._journeyPanel = journeyPanel;
+            presenter._journeyText = journeyTextComponent;
+            playAgainButton.onClick.AddListener(presenter.OnPlayAgainClicked);
+            reviewJourneyButton.onClick.AddListener(presenter.OnReviewJourneyClicked);
+            shareButton.onClick.AddListener(presenter.OnShareExperienceClicked);
             presenter.Hide();
             return presenter;
+        }
+
+        public void Bind(Action onPlayAgain, Action onShareExperience)
+        {
+            _onPlayAgain = onPlayAgain;
+            _onShareExperience = onShareExperience;
         }
 
         public void ShowResults(GameSession gameSession)
         {
             if (gameSession == null) throw new ArgumentNullException(nameof(gameSession));
+            _lastSession = gameSession;
             if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
             if (_messageText != null) _messageText.text = BuildResultsText(gameSession);
+            _journeyExpanded = false;
+            if (_journeyPanel != null) _journeyPanel.SetActive(false);
+            PopulateFinalSnapshot(gameSession);
             gameObject.SetActive(true);
             _canvasGroup.alpha = 1f;
             _canvasGroup.interactable = true;
@@ -119,6 +199,49 @@ namespace Bedrot.Narrative.Presentation
                 "Vy" => "Tạo được sự đồng cảm với Vy\nCác lựa chọn của bạn gần nhất với những điều Vy coi trọng. Trong quá trình giải quyết các tình huống, Vy ngày càng sẵn sàng lắng nghe và tin tưởng vào quan điểm của bạn.",
                 _ => $"{characterName} là người tin tưởng nhất vào cách bạn đưa ra quyết định."
             };
+
+        private void PopulateFinalSnapshot(GameSession gameSession)
+        {
+            if (_snapshotContainer == null) return;
+            foreach (Transform child in _snapshotContainer) Destroy(child.gameObject);
+
+            foreach (MediaLiteracyMetric metric in (MediaLiteracyMetric[])Enum.GetValues(typeof(MediaLiteracyMetric)))
+            {
+                int score = gameSession.MediaLiteracy.GetScore(metric);
+                RuntimeUIFactory.CreateText(_snapshotContainer, metric.ToString(), $"{metric}: {score}", 22, TextAnchor.MiddleCenter,
+                    score >= 0 ? new Color(0.6f, 0.85f, 0.6f) : new Color(0.9f, 0.6f, 0.6f));
+            }
+            foreach (KeyValuePair<CharacterId, int> relationship in gameSession.Relationships.Scores.OrderBy(x => x.Key.Value, StringComparer.Ordinal))
+            {
+                RuntimeUIFactory.CreateText(_snapshotContainer, relationship.Key.Value, $"{relationship.Key.Value}: {relationship.Value}", 22, TextAnchor.MiddleCenter,
+                    relationship.Value >= 0 ? new Color(0.6f, 0.75f, 0.95f) : new Color(0.9f, 0.6f, 0.6f));
+            }
+        }
+
+        private void OnPlayAgainClicked()
+        {
+            Hide();
+            _onPlayAgain?.Invoke();
+        }
+
+        private void OnShareExperienceClicked()
+        {
+            Hide();
+            _onShareExperience?.Invoke();
+        }
+
+        private void OnReviewJourneyClicked()
+        {
+            if (_journeyPanel == null || _lastSession == null) return;
+            _journeyExpanded = !_journeyExpanded;
+            if (_journeyExpanded)
+            {
+                _journeyText.text = _lastSession.ChoiceHistory.SelectedChoiceIds.Count == 0
+                    ? "Bạn chưa đưa ra lựa chọn nào."
+                    : string.Join("\n", _lastSession.ChoiceHistory.SelectedChoiceIds.Select(id => $"• {id.Value}"));
+            }
+            _journeyPanel.SetActive(_journeyExpanded);
+        }
 
         private void Hide()
         {
