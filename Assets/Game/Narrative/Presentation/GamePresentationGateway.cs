@@ -25,9 +25,24 @@ namespace Bedrot.Narrative.Presentation
         public void EndGame(NarrativeSceneId finalSceneId, GameSession gameSession)
         {
             _events?.Publish(new GameEndedEvent(finalSceneId));
-            if (gameEndingPresenter == null)
-                gameEndingPresenter = GameEndingPresenter.Create(transform);
+            ResolveActiveGameEndingPresenter();
             gameEndingPresenter.ShowResults(gameSession);
+        }
+
+        private void ResolveActiveGameEndingPresenter()
+        {
+            if (gameEndingPresenter != null && gameEndingPresenter.gameObject.scene == SceneManager.GetActiveScene()) return;
+            foreach (GameObject root in SceneManager.GetActiveScene().GetRootGameObjects())
+            {
+                GameEndingPresenter candidate = root.GetComponentInChildren<GameEndingPresenter>(true);
+                if (candidate != null)
+                {
+                    gameEndingPresenter = candidate;
+                    return;
+                }
+            }
+
+            gameEndingPresenter = GameEndingPresenter.Create(transform);
         }
 
         private void ResolveActiveScenePresenter()

@@ -225,6 +225,26 @@ namespace Bedrot.Tests.EditMode
         }
 
         [Test]
+        public void EndingPresenterBuildsSeparateFinalInsightPanelContent()
+        {
+            Harness harness = CreateHarness();
+            harness.Start();
+            harness.Session.Relationships.ChangeScore(Linh, 2);
+            harness.Session.MediaLiteracy.ChangeScore(MediaLiteracyMetric.Evidence, 3);
+
+            FinalInsightViewModel viewModel = GameEndingPresenter.BuildFinalInsightViewModel(harness.Session);
+
+            Assert.That(viewModel.ScreenTitle, Is.EqualTo("NHẬN XÉT CUỐI GAME"));
+            Assert.That(viewModel.MediaLiteracyPanelLabel, Is.EqualTo("NHẬN XÉT MIL"));
+            Assert.That(viewModel.MediaLiteracyInsightTitle, Is.EqualTo("Người kiểm chứng thông tin"));
+            Assert.That(viewModel.MediaLiteracyInsightBody, Does.Contain("nguồn tin, bối cảnh và bằng chứng"));
+            Assert.That(viewModel.RelationshipPanelLabel, Is.EqualTo("NHẬN XÉT QUAN HỆ"));
+            Assert.That(viewModel.RelationshipInsightTitle, Is.EqualTo("Xây dựng niềm tin với Linh"));
+            Assert.That(viewModel.RelationshipInsightBody, Does.Contain("Linh phản ứng tích cực nhất"));
+            Assert.That(viewModel.RelationshipCharacterId, Is.EqualTo("Linh"));
+        }
+
+        [Test]
         public void EndingResultsUseBalancedInsightsWhenHighestScoresAreTied()
         {
             Harness harness = CreateHarness();
