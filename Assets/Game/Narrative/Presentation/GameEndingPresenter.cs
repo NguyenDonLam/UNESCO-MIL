@@ -7,11 +7,78 @@ using UnityEngine.UI;
 
 namespace Bedrot.Narrative.Presentation
 {
+    public sealed class FinalInsightViewModel
+    {
+        public string ScreenTitle { get; }
+        public string MediaLiteracyPanelLabel { get; }
+        public string MediaLiteracyInsightTitle { get; }
+        public string MediaLiteracyInsightBody { get; }
+        public string RelationshipPanelLabel { get; }
+        public string RelationshipInsightTitle { get; }
+        public string RelationshipInsightBody { get; }
+        public string RelationshipCharacterId { get; }
+
+        public FinalInsightViewModel(
+            string screenTitle,
+            string mediaLiteracyPanelLabel,
+            string mediaLiteracyInsightTitle,
+            string mediaLiteracyInsightBody,
+            string relationshipPanelLabel,
+            string relationshipInsightTitle,
+            string relationshipInsightBody,
+            string relationshipCharacterId)
+        {
+            ScreenTitle = screenTitle;
+            MediaLiteracyPanelLabel = mediaLiteracyPanelLabel;
+            MediaLiteracyInsightTitle = mediaLiteracyInsightTitle;
+            MediaLiteracyInsightBody = mediaLiteracyInsightBody;
+            RelationshipPanelLabel = relationshipPanelLabel;
+            RelationshipInsightTitle = relationshipInsightTitle;
+            RelationshipInsightBody = relationshipInsightBody;
+            RelationshipCharacterId = relationshipCharacterId;
+        }
+    }
+
+    [Serializable]
+    public sealed class RelationshipPortraitEntry
+    {
+        [SerializeField] private string characterId;
+        [SerializeField] private Sprite portrait;
+
+        public string CharacterId => characterId;
+        public Sprite Portrait => portrait;
+    }
+
     /// <summary>Presents the terminal screen after the final narrative scene.</summary>
     public sealed class GameEndingPresenter : MonoBehaviour
     {
-        private CanvasGroup _canvasGroup;
-        private Text _messageText;
+        [Header("Visibility")]
+        [SerializeField] private CanvasGroup canvasGroup;
+        [SerializeField] private GameObject viewRoot;
+        [SerializeField] private bool hideOnAwake = true;
+
+        [Header("Top frame")]
+        [SerializeField] private Text screenTitleText;
+
+        [Header("Left panel - MIL insight")]
+        [SerializeField] private Text mediaLiteracyPanelLabelText;
+        [SerializeField] private Text mediaLiteracyInsightTitleText;
+        [SerializeField] private Text mediaLiteracyInsightBodyText;
+
+        [Header("Right panel - relationship insight")]
+        [SerializeField] private Text relationshipPanelLabelText;
+        [SerializeField] private Text relationshipInsightTitleText;
+        [SerializeField] private Text relationshipInsightBodyText;
+        [SerializeField] private Image relationshipPortraitImage;
+        [SerializeField] private RelationshipPortraitEntry[] relationshipPortraits = Array.Empty<RelationshipPortraitEntry>();
+
+        [Header("Optional legacy fallback")]
+        [SerializeField] private Text legacyMessageText;
+
+        private void Awake()
+        {
+            if (hideOnAwake) Hide();
+        }
 
         public static GameEndingPresenter Create(Transform parent)
         {
@@ -50,8 +117,9 @@ namespace Bedrot.Narrative.Presentation
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
             GameEndingPresenter presenter = root.GetComponent<GameEndingPresenter>();
-            presenter._canvasGroup = root.GetComponent<CanvasGroup>();
-            presenter._messageText = text;
+            presenter.canvasGroup = root.GetComponent<CanvasGroup>();
+            presenter.viewRoot = root;
+            presenter.legacyMessageText = text;
             presenter.Hide();
             return presenter;
         }
@@ -59,12 +127,64 @@ namespace Bedrot.Narrative.Presentation
         public void ShowResults(GameSession gameSession)
         {
             if (gameSession == null) throw new ArgumentNullException(nameof(gameSession));
-            if (_canvasGroup == null) _canvasGroup = GetComponent<CanvasGroup>();
-            if (_messageText != null) _messageText.text = BuildResultsText(gameSession);
+
             gameObject.SetActive(true);
-            _canvasGroup.alpha = 1f;
-            _canvasGroup.interactable = true;
-            _canvasGroup.blocksRaycasts = true;
+            if (viewRoot != null) viewRoot.SetActive(true);
+            ResolveCanvasGroup();
+
+            FinalInsightViewModel viewModel = BuildFinalInsightViewModel(gameSession);
+            PresentFinalInsightViewModel(viewModel);
+
+            if (canvasGroup == null) return;
+            canvasGroup.alpha = 1f;
+            canvasGroup.interactable = true;
+            canvasGroup.blocksRaycasts = true;
+        }
+
+        public static FinalInsightViewModel BuildFinalInsightViewModel(GameSession gameSession)
+        {
+            if (gameSession == null) throw new ArgumentNullException(nameof(gameSession));
+
+            SplitInsight(BuildMediaLiteracyInsight(gameSession), out string mediaTitle, out string mediaBody);
+
+            string relationshipInsight = BuildRelationshipInsight(gameSession);
+            string relationshipCharacterId = GetSingleHighestRelationshipCharacterId(gameSession);
+            if (relationshipCharacterId == null && gameSession.Relationships.Scores.Count > 1)
+            {
+                return new FinalInsightViewModel(
+                    "NHẬN XÉT CUỐI GAME",
+                    "NHẬN XÉT MIL",
+                    mediaTitle,
+                    mediaBody,
+                    "NHẬN XÉT QUAN HỆ",
+                    "Nhiều mối quan hệ nổi bật",
+                    relationshipInsight,
+                    null);
+            }
+
+            SplitInsight(relationshipInsight, out string relationshipTitle, out string relationshipBody);
+            return new FinalInsightViewModel(
+                "NHẬN XÉT CUỐI GAME",
+                "NHẬN XÉT MIL",
+                mediaTitle,
+                mediaBody,
+                "NHẬN XÉT QUAN HỆ",
+                relationshipTitle,
+                relationshipBody,
+                relationshipCharacterId);
+        }
+
+        private void PresentFinalInsightViewModel(FinalInsightViewModel viewModel)
+        {
+            SetText(screenTitleText, viewModel.ScreenTitle);
+            SetText(mediaLiteracyPanelLabelText, viewModel.MediaLiteracyPanelLabel);
+            SetText(mediaLiteracyInsightTitleText, viewModel.MediaLiteracyInsightTitle);
+            SetText(mediaLiteracyInsightBodyText, viewModel.MediaLiteracyInsightBody);
+            SetText(relationshipPanelLabelText, viewModel.RelationshipPanelLabel);
+            SetText(relationshipInsightTitleText, viewModel.RelationshipInsightTitle);
+            SetText(relationshipInsightBodyText, viewModel.RelationshipInsightBody);
+            SetText(legacyMessageText, BuildLegacyResultsText(viewModel));
+            PresentRelationshipPortrait(viewModel.RelationshipCharacterId);
         }
 
         public static string BuildResultsText(GameSession gameSession)
@@ -76,6 +196,22 @@ namespace Bedrot.Narrative.Presentation
             text.Append("\nNHẬN XÉT QUAN HỆ\n").Append(BuildRelationshipInsight(gameSession));
 
             return text.ToString().TrimEnd();
+        }
+
+        private static string BuildLegacyResultsText(FinalInsightViewModel viewModel)
+        {
+            var text = new StringBuilder(viewModel.ScreenTitle).Append("\n\n")
+                .Append(viewModel.MediaLiteracyPanelLabel).Append('\n')
+                .Append(viewModel.MediaLiteracyInsightTitle);
+            if (!string.IsNullOrWhiteSpace(viewModel.MediaLiteracyInsightBody))
+                text.Append('\n').Append(viewModel.MediaLiteracyInsightBody);
+
+            text.Append("\n\n").Append(viewModel.RelationshipPanelLabel).Append('\n')
+                .Append(viewModel.RelationshipInsightTitle);
+            if (!string.IsNullOrWhiteSpace(viewModel.RelationshipInsightBody))
+                text.Append('\n').Append(viewModel.RelationshipInsightBody);
+
+            return text.ToString();
         }
 
         private static string BuildMediaLiteracyInsight(GameSession gameSession)
@@ -120,12 +256,64 @@ namespace Bedrot.Narrative.Presentation
                 _ => $"{characterName} là người tin tưởng nhất vào cách bạn đưa ra quyết định."
             };
 
+        private static string GetSingleHighestRelationshipCharacterId(GameSession gameSession)
+        {
+            var scores = gameSession.Relationships.Scores.ToArray();
+            if (scores.Length == 0) return null;
+
+            int highestScore = scores.Max(x => x.Value);
+            var winners = scores.Where(x => x.Value == highestScore).ToArray();
+            return winners.Length == 1 ? winners[0].Key.Value : null;
+        }
+
+        private static void SplitInsight(string insight, out string title, out string body)
+        {
+            string normalized = (insight ?? string.Empty).Replace("\r\n", "\n").Trim();
+            int separatorIndex = normalized.IndexOf('\n');
+            if (separatorIndex < 0)
+            {
+                title = normalized;
+                body = string.Empty;
+                return;
+            }
+
+            title = normalized.Substring(0, separatorIndex).Trim();
+            body = normalized.Substring(separatorIndex + 1).Trim();
+        }
+
+        private void PresentRelationshipPortrait(string characterId)
+        {
+            if (relationshipPortraitImage == null) return;
+
+            RelationshipPortraitEntry match = null;
+            if (!string.IsNullOrWhiteSpace(characterId) && relationshipPortraits != null)
+            {
+                match = Array.Find(relationshipPortraits,
+                    entry => entry != null && string.Equals(entry.CharacterId, characterId, StringComparison.Ordinal));
+            }
+
+            bool hasPortrait = match?.Portrait != null;
+            relationshipPortraitImage.sprite = hasPortrait ? match.Portrait : null;
+            relationshipPortraitImage.gameObject.SetActive(hasPortrait);
+        }
+
+        private void ResolveCanvasGroup()
+        {
+            if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
+        }
+
+        private static void SetText(Text target, string value)
+        {
+            if (target != null) target.text = value ?? string.Empty;
+        }
+
         private void Hide()
         {
-            if (_canvasGroup == null) return;
-            _canvasGroup.alpha = 0f;
-            _canvasGroup.interactable = false;
-            _canvasGroup.blocksRaycasts = false;
+            ResolveCanvasGroup();
+            if (canvasGroup == null) return;
+            canvasGroup.alpha = 0f;
+            canvasGroup.interactable = false;
+            canvasGroup.blocksRaycasts = false;
         }
 
         private static void Stretch(RectTransform rectTransform)
