@@ -47,13 +47,16 @@ namespace Bedrot.Bootstrap
             _choiceHandler = new SelectChoiceCommandHandler(_sessionStore, scenes, _completeHandler, events);
             _startHandler = new StartNewGameCommandHandler(_sessionStore, scenes, sceneLoadingAdapter, presentationGateway, events);
             _restartHandler = new RestartGameCommandHandler(_startHandler);
-            presentationGateway.Bind(DispatchSelectChoiceCommand, DispatchCompleteNarrativeSceneCommand, events);
+            presentationGateway.Bind(DispatchSelectChoiceCommand, DispatchCompleteNarrativeSceneCommand,
+                DispatchRestartGameCommand, DispatchSubmitCommunityContributionCommand, events);
         }
 
         public void DispatchStartNewGameCommand() => _startHandler.Handle(new StartNewGameCommand());
         public void DispatchSelectChoiceCommand(ChoiceId id) => _choiceHandler.Handle(new SelectChoiceCommand(id));
         public void DispatchCompleteNarrativeSceneCommand(NarrativeSceneId id) => _completeHandler.Handle(new CompleteNarrativeSceneCommand(id));
         public void DispatchRestartGameCommand() => _restartHandler.Handle(new RestartGameCommand());
+        public void DispatchSubmitCommunityContributionCommand(SubmitCommunityContributionCommand command) =>
+            Debug.Log($"[CommunityContribution] type={command.SituationType} consent={command.ConsentToShare} description={command.Description}");
 
         private INarrativeSceneRepository CreateNarrativeSceneRepository()
         {
