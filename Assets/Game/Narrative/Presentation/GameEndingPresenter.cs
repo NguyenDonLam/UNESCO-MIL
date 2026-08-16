@@ -75,9 +75,24 @@ namespace Bedrot.Narrative.Presentation
         [Header("Optional legacy fallback")]
         [SerializeField] private Text legacyMessageText;
 
+        private Action _onPlayAgain;
+        private Action _onShareExperience;
+        private GameSession _lastSession;
+        private GameObject _journeyPanel;
+        private Text _journeyText;
+        private bool _journeyExpanded;
+        private bool _actionButtonsBuilt;
+
         private void Awake()
         {
             if (hideOnAwake) Hide();
+        }
+
+        /// <summary>Binds the "Play Again" and "Share Experience" callbacks, dispatched by the action buttons this presenter builds at runtime.</summary>
+        public void Bind(Action onPlayAgain, Action onShareExperience)
+        {
+            _onPlayAgain = onPlayAgain;
+            _onShareExperience = onShareExperience;
         }
 
         public static GameEndingPresenter Create(Transform parent)
@@ -128,9 +143,13 @@ namespace Bedrot.Narrative.Presentation
         {
             if (gameSession == null) throw new ArgumentNullException(nameof(gameSession));
 
+            _lastSession = gameSession;
             gameObject.SetActive(true);
             if (viewRoot != null) viewRoot.SetActive(true);
             ResolveCanvasGroup();
+            EnsureActionButtons();
+            _journeyExpanded = false;
+            if (_journeyPanel != null) _journeyPanel.SetActive(false);
 
             FinalInsightViewModel viewModel = BuildFinalInsightViewModel(gameSession);
             PresentFinalInsightViewModel(viewModel);
@@ -314,6 +333,90 @@ namespace Bedrot.Narrative.Presentation
             canvasGroup.alpha = 0f;
             canvasGroup.interactable = false;
             canvasGroup.blocksRaycasts = false;
+        }
+
+        /// <summary>
+        /// Builds the "Play again / Review journey / Share experience" action row and journey panel at runtime,
+        /// so they work whether this presenter was scene-authored or created via <see cref="Create"/>. Idempotent.
+        /// </summary>
+        private void EnsureActionButtons()
+        {
+            if (_actionButtonsBuilt) return;
+            _actionButtonsBuilt = true;
+
+            GameObject overlay = RuntimeUIFactory.CreateOverlayCanvas("EndingActionsOverlay", transform, short.MaxValue);
+
+            var journeyPanel = new GameObject("JourneyPanel", typeof(RectTransform), typeof(Image));
+            journeyPanel.transform.SetParent(overlay.transform, false);
+            RectTransform journeyRect = (RectTransform)journeyPanel.transform;
+            journeyRect.anchorMin = new Vector2(0.2f, 0.22f);
+            journeyRect.anchorMax = new Vector2(0.8f, 0.9f);
+            journeyRect.offsetMin = journeyRect.offsetMax = Vector2.zero;
+            journeyPanel.GetComponent<Image>().color = new Color(0.05f, 0.06f, 0.08f, 0.97f);
+
+            var journeyText = new GameObject("JourneyText", typeof(RectTransform), typeof(Text));
+            journeyText.transform.SetParent(journeyPanel.transform, false);
+            RectTransform journeyTextRect = journeyText.GetComponent<RectTransform>();
+            journeyTextRect.anchorMin = Vector2.zero; journeyTextRect.anchorMax = Vector2.one;
+            journeyTextRect.offsetMin = new Vector2(30f, 30f); journeyTextRect.offsetMax = new Vector2(-30f, -30f);
+            Text journeyTextComponent = journeyText.GetComponent<Text>();
+            journeyTextComponent.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            journeyTextComponent.fontSize = 22;
+            journeyTextComponent.color = Color.white;
+            journeyTextComponent.alignment = TextAnchor.UpperLeft;
+            journeyPanel.SetActive(false);
+
+            var buttonRow = new GameObject("Buttons", typeof(RectTransform));
+            buttonRow.transform.SetParent(overlay.transform, false);
+            RectTransform buttonRowRect = (RectTransform)buttonRow.transform;
+            buttonRowRect.anchorMin = new Vector2(0.5f, 0f);
+            buttonRowRect.anchorMax = new Vector2(0.5f, 0f);
+            buttonRowRect.pivot = new Vector2(0.5f, 0f);
+            buttonRowRect.sizeDelta = new Vector2(1000f, 80f);
+            buttonRowRect.anchoredPosition = new Vector2(0f, 50f);
+            var buttonLayout = buttonRow.AddComponent<HorizontalLayoutGroup>();
+            buttonLayout.spacing = 24f;
+            buttonLayout.childControlWidth = false;
+            buttonLayout.childControlHeight = false;
+            buttonLayout.childAlignment = TextAnchor.MiddleCenter;
+
+            Button playAgainButton = RuntimeUIFactory.CreateButton(buttonRow.transform, "PlayAgainButton", "Chơi lại", new Color(0.2f, 0.55f, 0.3f), 26);
+            playAgainButton.GetComponent<RectTransform>().sizeDelta = new Vector2(260f, 68f);
+            Button reviewJourneyButton = RuntimeUIFactory.CreateButton(buttonRow.transform, "ReviewJourneyButton", "Xem lại hành trình", new Color(0.3f, 0.3f, 0.33f), 26);
+            reviewJourneyButton.GetComponent<RectTransform>().sizeDelta = new Vector2(320f, 68f);
+            Button shareButton = RuntimeUIFactory.CreateButton(buttonRow.transform, "ShareExperienceButton", "Chia sẻ trải nghiệm", new Color(0.2f, 0.4f, 0.65f), 26);
+            shareButton.GetComponent<RectTransform>().sizeDelta = new Vector2(320f, 68f);
+
+            _journeyPanel = journeyPanel;
+            _journeyText = journeyTextComponent;
+            playAgainButton.onClick.AddListener(OnPlayAgainClicked);
+            reviewJourneyButton.onClick.AddListener(OnReviewJourneyClicked);
+            shareButton.onClick.AddListener(OnShareExperienceClicked);
+        }
+
+        private void OnPlayAgainClicked()
+        {
+            Hide();
+            _onPlayAgain?.Invoke();
+        }
+
+        private void OnShareExperienceClicked()
+        {
+            Hide();
+            _onShareExperience?.Invoke();
+        }
+
+        private void OnReviewJourneyClicked()
+        {
+            if (_journeyPanel == null || _lastSession == null) return;
+            _journeyExpanded = !_journeyExpanded;
+            if (_journeyExpanded)
+            {
+                _journeyText.text = _lastSession.ChoiceHistory.SelectedChoiceIds.Count == 0
+                    ? "Bạn chưa đưa ra lựa chọn nào."
+                    : string.Join("\n", _lastSession.ChoiceHistory.SelectedChoiceIds.Select(id => $"• {id.Value}"));
+            }
+            _journeyPanel.SetActive(_journeyExpanded);
         }
 
         private static void Stretch(RectTransform rectTransform)
