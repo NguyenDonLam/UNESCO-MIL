@@ -11,9 +11,6 @@ namespace Bedrot.Narrative.Presentation
 {
     public sealed class GamePresentationGateway : MonoBehaviour, INarrativePresentationGateway
     {
-        /// <summary>PlayerPrefs key tracking whether the player has ever dismissed the SIFT introduction card.</summary>
-        public const string HasSeenSIFTIntroPrefKey = "Bedrot.SIFT.HasSeenIntro";
-
         [SerializeField] private GameEndingPresenter gameEndingPresenter;
 
         private SIFTToolkitPresenter _siftToolkit;
@@ -33,6 +30,7 @@ namespace Bedrot.Narrative.Presentation
         private MajorSceneId? _currentMajorSceneId;
         private IDisposable _relationshipSubscription;
         private IDisposable _mediaLiteracySubscription;
+        private GameSession _lastGameSession;
 
         public void Bind(Action<ChoiceId> selectChoice, Action<NarrativeSceneId> completeScene,
             Action onPlayAgain, Action<SubmitCommunityContributionCommand> onSubmitContribution, IGameEventPublisher events)
@@ -53,19 +51,8 @@ namespace Bedrot.Narrative.Presentation
 
         public void ShowSIFTInformationCard(Action onBeginCheck)
         {
-            if (PlayerPrefs.GetInt(HasSeenSIFTIntroPrefKey, 0) != 0)
-            {
-                onBeginCheck?.Invoke();
-                return;
-            }
-
             EnsurePersistentPresenters();
-            _siftCard.Show(() =>
-            {
-                PlayerPrefs.SetInt(HasSeenSIFTIntroPrefKey, 1);
-                PlayerPrefs.Save();
-                onBeginCheck?.Invoke();
-            });
+            _siftCard.Show(onBeginCheck);
         }
 
         public void PresentScene(NarrativeScene scene, GameSession gameSession)
@@ -89,6 +76,7 @@ namespace Bedrot.Narrative.Presentation
             _events?.Publish(new GameEndedEvent(finalSceneId));
             EnsurePersistentPresenters();
             _siftToolkit.HideIcon();
+            _lastGameSession = gameSession;
             if (gameEndingPresenter == null) gameEndingPresenter = GameEndingPresenter.Create(transform);
             gameEndingPresenter.Bind(_onPlayAgain, ShowCommunityContribution);
             gameEndingPresenter.ShowResults(gameSession);
@@ -120,8 +108,15 @@ namespace Bedrot.Narrative.Presentation
         private void ShowCommunityContribution()
         {
             EnsurePersistentPresenters();
-            _communityPresenter.Bind(_onSubmitContribution, () => { });
+            _communityPresenter.Bind(
+                command => { _onSubmitContribution?.Invoke(command); ReturnToEndingScreen(); },
+                ReturnToEndingScreen);
             _communityPresenter.Show();
+        }
+
+        private void ReturnToEndingScreen()
+        {
+            if (_lastGameSession != null) gameEndingPresenter.ShowResults(_lastGameSession);
         }
 
         private void EnsurePersistentPresenters()
@@ -131,6 +126,9 @@ namespace Bedrot.Narrative.Presentation
             if (_consequencePresenter == null) _consequencePresenter = ImmediateConsequencePresenter.Create(transform);
             if (_caseFilePresenter == null) _caseFilePresenter = EndOfSceneCaseFilePresenter.Create(transform);
             if (_communityPresenter == null) _communityPresenter = CommunityContributionPresenter.Create(transform);
+
+            // Reopening the card from the toolkit is a plain review: nothing to "begin", just close it again.
+            _siftToolkit.Bind(() => _siftCard.Show(() => { }));
         }
 
         private static string BuildLessonText(GameSession gameSession)

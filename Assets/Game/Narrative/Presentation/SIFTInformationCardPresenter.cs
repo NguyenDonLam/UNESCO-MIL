@@ -28,8 +28,10 @@ namespace Bedrot.Narrative.Presentation
             RuntimeUIFactory.CreateDimBackground(root.transform, 0.92f);
 
             Font pixelFont = RuntimeUIFactory.PixelFont;
-            (_, RectTransform content) = RuntimeUIFactory.CreateBracketPanel(
-                root.transform, "Card", new Vector2(980f, 900f), BorderCyan, CardFill);
+            (RectTransform frame, RectTransform fill) = RuntimeUIFactory.CreateStretchPanel(
+                root.transform, "Card", new RectOffset(48, 48, 48, 48), BorderCyan, CardFill, 8f);
+            RuntimeUIFactory.CreateCornerBlocks(frame, new Vector2(20f, 44f), 18f, BorderCyan, CardFill, 5f);
+            Transform content = RuntimeUIFactory.CreateCenteredColumn(fill, "Column", new Vector2(1040f, 900f));
 
             BuildTitleBar(content, pixelFont);
             BuildSteps(content, pixelFont);

@@ -40,9 +40,14 @@ namespace Bedrot.Narrative.Presentation
         public static Font DefaultFont => Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
         private static Font _pixelFont;
-        /// <summary>The pixel-art display font used by the SIFT toolkit UI.</summary>
+        /// <summary>The bold pixel-art display font used for headers, buttons and short labels.</summary>
         public static Font PixelFont => _pixelFont != null ? _pixelFont
             : _pixelFont = Resources.Load<Font>("Fonts/SVN-Determination Sans") ?? DefaultFont;
+
+        private static Font _secondaryFont;
+        /// <summary>The thinner terminal-style pixel font used for body copy (subtitles, descriptions, input text).</summary>
+        public static Font SecondaryFont => _secondaryFont != null ? _secondaryFont
+            : _secondaryFont = Resources.Load<Font>("Fonts/VT323-Regular") ?? DefaultFont;
 
         public static void Stretch(RectTransform rectTransform) => rectTransform.Stretch();
 
@@ -151,14 +156,16 @@ namespace Bedrot.Narrative.Presentation
             return border;
         }
 
-        /// <summary>Creates the cyan-bracket sci-fi panel frame used by the SIFT toolkit UI: an outer border, an inset fill, and small corner tabs.</summary>
-        public static (RectTransform Frame, RectTransform Content) CreateBracketPanel(Transform parent, string name, Vector2 size, Color borderColor, Color fillColor, float borderThickness = 6f)
+        /// <summary>Creates a panel frame that stretches to fill its parent with a fixed margin on each side: an outer border plus an inset fill.</summary>
+        public static (RectTransform Frame, RectTransform Content) CreateStretchPanel(Transform parent, string name, RectOffset margin, Color borderColor, Color fillColor, float borderThickness = 8f)
         {
             var frameObject = new GameObject(name, typeof(RectTransform), typeof(Image));
             frameObject.transform.SetParent(parent, false);
             RectTransform frameRect = (RectTransform)frameObject.transform;
-            frameRect.anchorMin = frameRect.anchorMax = new Vector2(0.5f, 0.5f);
-            frameRect.sizeDelta = size;
+            frameRect.anchorMin = Vector2.zero;
+            frameRect.anchorMax = Vector2.one;
+            frameRect.offsetMin = new Vector2(margin.left, margin.bottom);
+            frameRect.offsetMax = new Vector2(-margin.right, -margin.top);
             frameObject.GetComponent<Image>().color = borderColor;
 
             var fillObject = new GameObject("Fill", typeof(RectTransform), typeof(Image));
@@ -166,95 +173,150 @@ namespace Bedrot.Narrative.Presentation
             RectTransform fillRect = (RectTransform)fillObject.transform;
             fillRect.anchorMin = Vector2.zero;
             fillRect.anchorMax = Vector2.one;
-            fillRect.offsetMin = new Vector2(borderThickness, borderThickness);
-            fillRect.offsetMax = new Vector2(-borderThickness, -borderThickness);
+            fillRect.offsetMin = Vector2.one * borderThickness;
+            fillRect.offsetMax = -Vector2.one * borderThickness;
             fillObject.GetComponent<Image>().color = fillColor;
 
-            CreateCornerTabs(frameRect, borderColor);
             return (frameRect, fillRect);
         }
 
-        private static void CreateCornerTabs(RectTransform frameRect, Color borderColor)
+        /// <summary>Creates a fixed-size RectTransform centered inside its parent, useful as a readable content column inside a full-screen panel.</summary>
+        public static RectTransform CreateCenteredColumn(Transform parent, string name, Vector2 size)
         {
-            Color tabColor = new Color(borderColor.r * 0.35f, borderColor.g * 0.4f, borderColor.b * 0.45f, 1f);
-            const float tabWidth = 46f;
-            const float tabHeight = 12f;
-            const float inset = 30f;
-
-            CreateTab(frameRect, new Vector2(0f, 1f), new Vector2(inset, tabHeight * 0.5f), new Vector2(tabWidth, tabHeight), tabColor);
-            CreateTab(frameRect, new Vector2(1f, 1f), new Vector2(-inset, tabHeight * 0.5f), new Vector2(tabWidth, tabHeight), tabColor);
-            CreateTab(frameRect, new Vector2(0f, 0f), new Vector2(inset, -tabHeight * 0.5f), new Vector2(tabWidth, tabHeight), tabColor);
-            CreateTab(frameRect, new Vector2(1f, 0f), new Vector2(-inset, -tabHeight * 0.5f), new Vector2(tabWidth, tabHeight), tabColor);
+            var columnObject = new GameObject(name, typeof(RectTransform));
+            columnObject.transform.SetParent(parent, false);
+            RectTransform columnRect = (RectTransform)columnObject.transform;
+            columnRect.anchorMin = columnRect.anchorMax = new Vector2(0.5f, 0.5f);
+            columnRect.sizeDelta = size;
+            return columnRect;
         }
 
-        private static void CreateTab(RectTransform parent, Vector2 anchor, Vector2 anchoredPosition, Vector2 sizeDelta, Color color)
+        /// <summary>Creates a multi-line bordered input field (border ring + inset fill + placeholder/value text). Position the returned Frame, not the Field.</summary>
+        public static (RectTransform Frame, InputField Field) CreateOutlinedInputField(Transform parent, string name, string placeholder,
+            Color borderColor, Color fillColor, Color textColor, Color placeholderColor, Font font, int fontSize, float borderThickness = 3f)
         {
-            var tabObject = new GameObject("CornerTab", typeof(RectTransform), typeof(Image));
-            tabObject.transform.SetParent(parent, false);
-            RectTransform tabRect = (RectTransform)tabObject.transform;
-            tabRect.anchorMin = tabRect.anchorMax = anchor;
-            tabRect.pivot = anchor;
-            tabRect.anchoredPosition = anchoredPosition;
-            tabRect.sizeDelta = sizeDelta;
-            tabObject.GetComponent<Image>().color = color;
-        }
+            var borderObject = new GameObject(name, typeof(RectTransform), typeof(Image));
+            borderObject.transform.SetParent(parent, false);
+            RectTransform borderRect = (RectTransform)borderObject.transform;
+            borderObject.GetComponent<Image>().color = borderColor;
 
-        public static Toggle CreateToggle(Transform parent, string name, string label)
-        {
-            var toggleObject = new GameObject(name, typeof(RectTransform), typeof(Toggle));
-            toggleObject.transform.SetParent(parent, false);
+            var fieldObject = new GameObject("Field", typeof(RectTransform), typeof(Image), typeof(InputField));
+            fieldObject.transform.SetParent(borderObject.transform, false);
+            RectTransform fieldRect = (RectTransform)fieldObject.transform;
+            fieldRect.anchorMin = Vector2.zero;
+            fieldRect.anchorMax = Vector2.one;
+            fieldRect.offsetMin = new Vector2(borderThickness, borderThickness);
+            fieldRect.offsetMax = new Vector2(-borderThickness, -borderThickness);
+            fieldObject.GetComponent<Image>().color = fillColor;
 
-            var backgroundObject = new GameObject("Background", typeof(RectTransform), typeof(Image));
-            backgroundObject.transform.SetParent(toggleObject.transform, false);
-            RectTransform backgroundRect = (RectTransform)backgroundObject.transform;
-            backgroundRect.anchorMin = new Vector2(0f, 0.5f);
-            backgroundRect.anchorMax = new Vector2(0f, 0.5f);
-            backgroundRect.sizeDelta = new Vector2(32f, 32f);
-            backgroundRect.anchoredPosition = new Vector2(16f, 0f);
-            Image background = backgroundObject.GetComponent<Image>();
-            background.color = new Color(1f, 1f, 1f, 0.9f);
-
-            var checkObject = new GameObject("Checkmark", typeof(RectTransform), typeof(Image));
-            checkObject.transform.SetParent(backgroundObject.transform, false);
-            Stretch((RectTransform)checkObject.transform);
-            Image check = checkObject.GetComponent<Image>();
-            check.color = new Color(0.2f, 0.6f, 0.3f);
-
-            Text labelText = CreateText(toggleObject.transform, "Label", label, 24, TextAnchor.MiddleLeft, Color.white);
-            RectTransform labelRect = (RectTransform)labelText.transform;
-            labelRect.anchorMin = new Vector2(0f, 0f);
-            labelRect.anchorMax = new Vector2(1f, 1f);
-            labelRect.offsetMin = new Vector2(40f, 0f);
-            labelRect.offsetMax = Vector2.zero;
-
-            Toggle toggle = toggleObject.GetComponent<Toggle>();
-            toggle.targetGraphic = background;
-            toggle.graphic = check;
-            toggle.isOn = false;
-            return toggle;
-        }
-
-        public static InputField CreateInputField(Transform parent, string placeholder)
-        {
-            var fieldObject = new GameObject("InputField", typeof(RectTransform), typeof(Image), typeof(InputField));
-            fieldObject.transform.SetParent(parent, false);
-            fieldObject.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.95f);
-
-            Text placeholderText = CreateText(fieldObject.transform, "Placeholder", placeholder, 22, TextAnchor.UpperLeft, new Color(0.4f, 0.4f, 0.4f));
+            Text placeholderText = CreateText(fieldObject.transform, "Placeholder", placeholder, fontSize, TextAnchor.UpperLeft, placeholderColor, font);
             RectTransform placeholderRect = (RectTransform)placeholderText.transform;
             placeholderRect.anchorMin = Vector2.zero; placeholderRect.anchorMax = Vector2.one;
-            placeholderRect.offsetMin = new Vector2(10f, 6f); placeholderRect.offsetMax = new Vector2(-10f, -6f);
+            placeholderRect.offsetMin = new Vector2(14f, 10f); placeholderRect.offsetMax = new Vector2(-14f, -10f);
 
-            Text valueText = CreateText(fieldObject.transform, "Text", string.Empty, 22, TextAnchor.UpperLeft, Color.black);
+            Text valueText = CreateText(fieldObject.transform, "Text", string.Empty, fontSize, TextAnchor.UpperLeft, textColor, font);
             RectTransform valueRect = (RectTransform)valueText.transform;
             valueRect.anchorMin = Vector2.zero; valueRect.anchorMax = Vector2.one;
-            valueRect.offsetMin = new Vector2(10f, 6f); valueRect.offsetMax = new Vector2(-10f, -6f);
+            valueRect.offsetMin = new Vector2(14f, 10f); valueRect.offsetMax = new Vector2(-14f, -10f);
 
             InputField field = fieldObject.GetComponent<InputField>();
             field.textComponent = valueText;
             field.placeholder = placeholderText;
             field.lineType = InputField.LineType.MultiLineNewline;
-            return field;
+            return (borderRect, field);
+        }
+
+        /// <summary>Creates a selectable pill/tag button: border ring, inset fill, centered label. Caller manages the selected-state recolor.</summary>
+        public static (Button Button, Image Border, Image Fill, Text Label) CreateTagButton(Transform parent, string name, string label, Font font, int fontSize = 20, float borderThickness = 3f)
+        {
+            var buttonObject = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            buttonObject.transform.SetParent(parent, false);
+            Image border = buttonObject.GetComponent<Image>();
+
+            var fillObject = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fillObject.transform.SetParent(buttonObject.transform, false);
+            RectTransform fillRect = (RectTransform)fillObject.transform;
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = new Vector2(borderThickness, borderThickness);
+            fillRect.offsetMax = new Vector2(-borderThickness, -borderThickness);
+            Image fill = fillObject.GetComponent<Image>();
+
+            Text labelText = CreateText(fillObject.transform, "Label", label, fontSize, TextAnchor.MiddleCenter, Color.white, font);
+            Stretch((RectTransform)labelText.transform);
+
+            Button button = buttonObject.GetComponent<Button>();
+            button.targetGraphic = border;
+            return (button, border, fill, labelText);
+        }
+
+        /// <summary>Creates a full-row clickable checkbox toggle: a bordered box (recolored on check) plus a label filling the rest of the row.</summary>
+        public static Toggle CreateCheckboxRow(Transform parent, string name, string label, float boxSize, Font font, int fontSize,
+            Color borderColor, Color uncheckedFill, Color checkedFill, Color labelColor, float borderThickness = 3f)
+        {
+            var rowObject = new GameObject(name, typeof(RectTransform), typeof(Toggle));
+            rowObject.transform.SetParent(parent, false);
+
+            var boxObject = new GameObject("Box", typeof(RectTransform), typeof(Image));
+            boxObject.transform.SetParent(rowObject.transform, false);
+            ((RectTransform)boxObject.transform).SetTopLeft(0f, 0f, new Vector2(boxSize, boxSize));
+            Image border = boxObject.GetComponent<Image>();
+            border.color = borderColor;
+
+            var fillObject = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fillObject.transform.SetParent(boxObject.transform, false);
+            RectTransform fillRect = (RectTransform)fillObject.transform;
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = Vector2.one;
+            fillRect.offsetMin = new Vector2(borderThickness, borderThickness);
+            fillRect.offsetMax = new Vector2(-borderThickness, -borderThickness);
+            Image fill = fillObject.GetComponent<Image>();
+            fill.color = uncheckedFill;
+
+            Text labelText = CreateText(rowObject.transform, "Label", label, fontSize, TextAnchor.MiddleLeft, labelColor, font);
+            RectTransform labelRect = (RectTransform)labelText.transform;
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = new Vector2(boxSize + 14f, 0f);
+            labelRect.offsetMax = Vector2.zero;
+
+            Toggle toggle = rowObject.GetComponent<Toggle>();
+            toggle.targetGraphic = border;
+            toggle.isOn = false;
+            toggle.onValueChanged.AddListener(isOn => fill.color = isOn ? checkedFill : uncheckedFill);
+            return toggle;
+        }
+
+        /// <summary>Adds 4 small accent blocks (an outline color ring + inset fill) straddling the corners of the given frame, mirrored symmetrically.</summary>
+        public static void CreateCornerBlocks(RectTransform frameRect, Vector2 blockSize, float outwardOffset, Color blockColor, Color outlineColor, float outlineThickness)
+        {
+            float cx = outwardOffset - blockSize.x * 0.5f;
+            float cy = outwardOffset - blockSize.y * 0.5f;
+            CreateCornerBlock(frameRect, new Vector2(0f, 1f), new Vector2(-cx, cy), blockSize, blockColor, outlineColor, outlineThickness);
+            CreateCornerBlock(frameRect, new Vector2(1f, 1f), new Vector2(cx, cy), blockSize, blockColor, outlineColor, outlineThickness);
+            CreateCornerBlock(frameRect, new Vector2(0f, 0f), new Vector2(-cx, -cy), blockSize, blockColor, outlineColor, outlineThickness);
+            CreateCornerBlock(frameRect, new Vector2(1f, 0f), new Vector2(cx, -cy), blockSize, blockColor, outlineColor, outlineThickness);
+        }
+
+        private static void CreateCornerBlock(RectTransform parent, Vector2 anchor, Vector2 anchoredPosition, Vector2 size, Color blockColor, Color outlineColor, float outlineThickness)
+        {
+            var outlineObject = new GameObject("CornerBlock", typeof(RectTransform), typeof(Image));
+            outlineObject.transform.SetParent(parent, false);
+            RectTransform outlineRect = (RectTransform)outlineObject.transform;
+            outlineRect.anchorMin = outlineRect.anchorMax = anchor;
+            outlineRect.pivot = new Vector2(0.5f, 0.5f);
+            outlineRect.anchoredPosition = anchoredPosition;
+            outlineRect.sizeDelta = size;
+            outlineObject.GetComponent<Image>().color = outlineColor;
+
+            var innerObject = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            innerObject.transform.SetParent(outlineObject.transform, false);
+            RectTransform innerRect = (RectTransform)innerObject.transform;
+            innerRect.anchorMin = Vector2.zero;
+            innerRect.anchorMax = Vector2.one;
+            innerRect.offsetMin = new Vector2(outlineThickness, outlineThickness);
+            innerRect.offsetMax = new Vector2(-outlineThickness, -outlineThickness);
+            innerObject.GetComponent<Image>().color = blockColor;
         }
     }
 }
